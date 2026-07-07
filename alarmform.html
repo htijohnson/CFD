@@ -137,8 +137,15 @@
         btnEl.disabled = true;
         errEl.style.display = "none";
 
-        // Query the API to process password logic securely on Google's end
-        fetch(`${GOOGLE_SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(inputVal)}`)
+        // Query the API securely using a POST body to prevent dynamic CORS routing locks
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'checkPassword',
+                password: inputVal
+            })
+        })
         .then(res => res.json())
         .then(data => {
             btnEl.innerText = "Unlock Form";
