@@ -87,7 +87,7 @@
 
 <script>
     // Make sure this matches your exact active Web App deployment URL string!
-    const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyvdztNeMpQBItfAdGkvkj0hdA8KzTPRFK5ldZEYzbq6BGRNzMstXHq2KFOza3QCR2E/exec";
+    const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbx53yDmPcEvN7Ig6Yi3FghAjH6yN7Ch96WRd6NaLdk4WoYw8ib9aueeNtZKsQWdeQC6/exec";
 
     window.addEventListener('DOMContentLoaded', () => {
         fetch(GOOGLE_SCRIPT_API_URL)
@@ -95,9 +95,12 @@
         .then(data => {
             if (!data || data.length === 0) throw new Error("Empty payload returned");
             
+            // Extract the arrays sent by your active script structure
             const statusMap = data[0]?.personnel_status || {};
             const fleetUnits = data[0]?.apparatus_fleet || [];
             const positionRoles = data[0]?.position_roles || [];
+            
+            // Collect the personnel names listed across your log sheet columns
             const activeResponders = Object.keys(data[0]?.attendance || {})
                                            .filter(name => statusMap[name] !== 0)
                                            .sort();
@@ -105,8 +108,12 @@
             const grid = document.getElementById('rosterGrid');
             grid.innerHTML = ''; 
             
+            if (activeResponders.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: orange;">No active responders found. Verify that names exist in row 1 of your log sheet starting at column E.</p>';
+                return;
+            }
+            
             activeResponders.forEach(name => {
-                // Safe unique ID string replacement for names with spaces/commas
                 const safeId = name.replace(/[^a-zA-Z0-9]/g, '');
 
                 let appOptions = `<option value="">- Out -</option>`;
@@ -132,25 +139,20 @@
                 `;
             });
 
-            // Monitor when unit selections shift
             grid.addEventListener('change', (e) => {
                 if (e.target.classList.contains('unit-select')) {
                     const safeId = e.target.getAttribute('data-safeid');
                     const posSelect = document.getElementById(`pos-${safeId}`);
                     if (posSelect) {
-                        if (e.target.value === "") {
-                            posSelect.value = "";
-                            posSelect.disabled = true;
-                        } else {
-                            posSelect.disabled = false;
-                        }
+                        posSelect.disabled = (e.target.value === "");
+                        if (e.target.value === "") posSelect.value = "";
                     }
                 }
             });
         })
         .catch(err => {
             console.error(err);
-            document.getElementById('rosterGrid').innerHTML = '<p style="color:red; text-align:center;">Network communication breakdown parsing data lists.</p>';
+            document.getElementById('rosterGrid').innerHTML = '<p style="color:red; text-align:center; grid-column:1/-1;">Network communication breakdown parsing data lists.</p>';
         });
     });
 
@@ -161,9 +163,7 @@
         status.innerText = "Transmitting record line...";
 
         const attendanceMap = {};
-        const selects = document.querySelectorAll('.unit-select');
-        
-        selects.forEach(select => {
+        document.querySelectorAll('.unit-select').forEach(select => {
             const name = select.getAttribute('data-person');
             const safeId = select.getAttribute('data-safeid');
             const appVal = select.value;
