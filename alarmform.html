@@ -137,13 +137,38 @@
         btnEl.disabled = true;
         errEl.style.display = "none";
 
-        // Query the API securely using a POST body to prevent dynamic CORS routing locks
+        // Sending as text/plain classifies this as a "Simple Request" in browsers,
+        // which completely bypasses the preflight OPTIONS request and stops CORS errors.
         fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 action: 'checkPassword',
                 password: inputVal
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP error " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            btnEl.innerText = "Unlock Form";
+            btnEl.disabled = false;
+            
+            if (data.authorized === true) {
+                sessionStorage.setItem('formAuthorized', 'true');
+                showFormAndFetchData();
+            } else {
+                errEl.style.display = "block";
+                document.getElementById('stationPassword').value = "";
+            }
+        })
+        .catch(err => {
+            btnEl.innerText = "Unlock Form";
+            btnEl.disabled = false;
+            alert("Error verifying credentials with server: " + err);
+        });
+    }
             })
         })
         .then(res => res.json())
