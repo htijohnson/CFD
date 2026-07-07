@@ -11,11 +11,13 @@
         h1 { margin: 0; font-size: 22px; }
         fieldset { border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
         legend { font-weight: bold; color: #1e3c72; padding: 0 10px; font-size: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
-        input, select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input, select, textarea { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         
+        /* Personnel Matrix Grid Styling */
         .personnel-header { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; font-weight: bold; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 8px; border-bottom: 2px solid #ddd; }
         .personnel-row { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; padding: 8px 10px; border-bottom: 1px solid #eee; align-items: center; }
         .personnel-row:hover { background-color: #fdfdfd; }
@@ -26,33 +28,17 @@
         .submit-btn { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; transition: background 0.2s; }
         .submit-btn:hover { background: #059669; }
         .loading { text-align: center; font-weight: bold; color: #2a5298; padding: 20px; }
-        .error-msg { color: #ef4444; background: #fee2e2; padding: 15px; border-radius: 4px; border: 1px solid #fca5a5; margin-bottom: 15px; text-align: center; font-weight: bold; }
-        .btn-retry { background: #2a5298; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-top: 10px; cursor: pointer; font-weight: bold;}
-        
-        .lock-container { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
-        .lock-container h2 { color: #1e3c72; margin-top: 0; }
-        .lock-input { width: 90%; padding: 10px; font-size: 16px; text-align: center; letter-spacing: 4px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; }
-        .lock-btn { background: #1e3c72; color: white; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; }
-        .lock-btn:hover { background: #2a5298; }
-        .lock-error { color: #ef4444; font-size: 14px; margin-top: 10px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="passwordScreen" class="lock-container">
-    <h2>🔒 Access Restricted</h2>
-    <p style="color: #666; font-size: 14px;">Please enter the station access code to modify incident sheets.</p>
-    <input type="password" id="stationPassword" class="lock-input" placeholder="••••" maxlength="8" onkeydown="if(event.key === 'Enter') verifyPassword()">
-    <button type="button" class="lock-btn" id="unlockBtn" onclick="verifyPassword()">Unlock Form</button>
-    <div id="passwordError" class="lock-error">Incorrect Access Code.</div>
-</div>
-
-<div class="form-container" id="mainFormArea" style="display: none;">
+<div class="form-container">
     <header>
         <h1>🚒 Coburg Fire Alarm Report Entry</h1>
     </header>
 
     <form id="incidentForm" onsubmit="handleFormSubmit(event)">
+        <!-- Section 1: Core Metrics -->
         <fieldset>
             <legend>General Call Information</legend>
             <div class="grid-3">
@@ -96,9 +82,10 @@
             </div>
         </fieldset>
 
+        <!-- Section 2: Dynamic Personnel Layout -->
         <fieldset>
             <legend>Personnel Attendance & Crew Assignments</legend>
-            <div id="personnelStatus" class="loading">Waiting for authorization...</div>
+            <div id="personnelLoading" class="loading">Fetching active rosters from Google Sheet...</div>
             
             <div id="personnelContainer" style="display: none;">
                 <div class="personnel-header">
@@ -115,130 +102,42 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHfZ7sGzNvJwSW8H8bYIdC0wzPFs5p5oompUvddgyzR9nj6WYnnq4hPM2MbcqP/exec";
+    // Link this to your Google Apps Script Web App URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
 
+    // hardcoded fallback list matched identically to your configuration imagery
     const apparatusList = ["C910", "E911", "E912", "B913", "TN916", "U917", "R918", "B923", "TN926", "POV", "SB"];
     const positionList = ["FF", "Officer", "Engineer", "AO", "Radio Operator", "900", "901", "902", "903", "904", "905", "906", "AIC"];
     
     let activeResponders = [];
 
-    window.addEventListener('DOMContentLoaded', () => {
-        if (sessionStorage.getItem('formAuthorized') === 'true') {
-            showFormAndFetchData();
-        }
-    });
-
-    function verifyPassword() {
-        const inputVal = document.getElementById('stationPassword').value;
-        const errEl = document.getElementById('passwordError');
-        const btnEl = document.getElementById('unlockBtn');
-        
-        btnEl.innerText = "Verifying...";
-        btnEl.disabled = true;
-        errEl.style.display = "none";
-
-        // Sending as text/plain classifies this as a "Simple Request" in browsers,
-        // which completely bypasses the preflight OPTIONS request and stops CORS errors.
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                action: 'checkPassword',
-                password: inputVal
-            })
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("HTTP error " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            btnEl.innerText = "Unlock Form";
-            btnEl.disabled = false;
-            
-            if (data.authorized === true) {
-                sessionStorage.setItem('formAuthorized', 'true');
-                showFormAndFetchData();
-            } else {
-                errEl.style.display = "block";
-                document.getElementById('stationPassword').value = "";
-            }
-        })
-        .catch(err => {
-            btnEl.innerText = "Unlock Form";
-            btnEl.disabled = false;
-            alert("Error verifying credentials with server: " + err);
-        });
-    }
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            btnEl.innerText = "Unlock Form";
-            btnEl.disabled = false;
-            
-            if (data.authorized === true) {
-                sessionStorage.setItem('formAuthorized', 'true');
-                showFormAndFetchData();
-            } else {
-                errEl.style.display = "block";
-                document.getElementById('stationPassword').value = "";
-            }
-        })
-        .catch(err => {
-            btnEl.innerText = "Unlock Form";
-            btnEl.disabled = false;
-            alert("Error verifying credentials with server: " + err);
-        });
-    }
-
-    function showFormAndFetchData() {
-        document.getElementById('passwordScreen').style.display = 'none';
-        document.getElementById('mainFormArea').style.display = 'block';
-        fetchRosterData();
-    }
+    window.addEventListener('DOMContentLoaded', fetchRosterData);
 
     function fetchRosterData() {
-        const statusEl = document.getElementById('personnelStatus');
-        statusEl.className = "loading";
-        statusEl.innerHTML = "Fetching active rosters from Google Sheet...";
-        statusEl.style.display = "block";
-        document.getElementById('personnelContainer').style.display = 'none';
-
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getRoster&_cb=${new Date().getTime()}`)
-        .then(res => {
-            if (!res.ok) throw new Error("Server responded with HTTP " + res.status);
-            return res.json();
-        })
+        // We call the App Script API with a query parameter to fetch roster names
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getRoster`)
+        .then(res => res.json())
         .then(data => {
-            if (data.error) {
-                showError("Google Apps Script Error: " + data.error);
-            } else if (data.personnel && data.personnel.length > 0) {
-                activeResponders = data.personnel;
-                buildPersonnelFormMatrix();
-            } else {
-                showError("No active personnel records were found in the 'Personnel' tab.");
-            }
+            activeResponders = data.personnel || [];
+            buildPersonnelFormMatrix();
         })
         .catch(err => {
-            showError(`Network Connection Blocked.`);
-            console.error(err);
+            console.error("Could not fetch live database layout, using default local mapping.", err);
+            // Fallback personnel array matching your operational records if API connection fails initially
+            activeResponders = ["Apker, Cory", "Armstead, Gregory", "Armstead, Lisa", "Bischoff, Caden", "Brown, Nathaniel", "Dmochowsky, Derek", "Downey, Bryce", "Harkins, Donald", "Nevin, Connor", "Novak, Joseph", "Ulm, Benton", "Ulm, Rachel"];
+            buildPersonnelFormMatrix();
         });
-    }
-
-    function showError(message) {
-        const statusEl = document.getElementById('personnelStatus');
-        statusEl.className = "error-msg";
-        statusEl.innerHTML = `<div>❌ ${message}</div><button type="button" class="btn-retry" onclick="fetchRosterData()">Retry Connection</button>`;
     }
 
     function buildPersonnelFormMatrix() {
-        document.getElementById('personnelStatus').style.display = 'none';
+        document.getElementById('personnelLoading').style.display = 'none';
         document.getElementById('personnelContainer').style.display = 'block';
         
         const rowsContainer = document.getElementById('personnelRows');
         rowsContainer.innerHTML = '';
 
         activeResponders.forEach((name, idx) => {
+            // Generate option fields safely
             const appOptions = ['<option value="">-- Choose Unit --</option>']
                 .concat(apparatusList.map(a => `<option value="${a}">${a}</option>`)).join('');
                 
@@ -268,6 +167,7 @@
         });
     }
 
+    // Enables/Disables dropdowns based on whether the checkbox is checked
     function toggleSelects(idx) {
         const isChecked = document.getElementById(`check_${idx}`).checked;
         document.getElementById(`app_${idx}`).disabled = !isChecked;
@@ -281,12 +181,6 @@
     function handleFormSubmit(event) {
         event.preventDefault();
         
-        if (sessionStorage.getItem('formAuthorized') !== 'true') {
-            alert("Unauthorized action block.");
-            window.location.reload();
-            return;
-        }
-
         const payload = {
             call_number: document.getElementById('call_number').value,
             date: document.getElementById('date').value,
@@ -297,17 +191,20 @@
             attendance: {}
         };
 
+        // Gather assignments for checked personnel
         activeResponders.forEach((name, idx) => {
             const checked = document.getElementById(`check_${idx}`).checked;
             if (checked) {
                 const app = document.getElementById(`app_${idx}`).value;
                 const pos = document.getElementById(`pos_${idx}`).value;
+                // Combine into a clean descriptive value that the analytics panel interprets as a response
                 payload.attendance[name] = `${app} - ${pos}`;
             } else {
-                payload.attendance[name] = "";
+                payload.attendance[name] = ""; // Keep blank for non-responders
             }
         });
 
+        // POST the completed entry safely to Google Sheets
         fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -317,7 +214,7 @@
         .then(() => {
             alert(`Incident Record ${payload.call_number} successfully posted to Google Sheets!`);
             document.getElementById('incidentForm').reset();
-            fetchRosterData();
+            buildPersonnelFormMatrix(); // Re-render clean row locks
         })
         .catch(err => alert("Error saving submission entry: " + err));
     }
