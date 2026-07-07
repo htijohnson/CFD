@@ -14,7 +14,7 @@
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
-        input, select, textarea { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input, select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         
         .personnel-header { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; font-weight: bold; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 8px; border-bottom: 2px solid #ddd; }
         .personnel-row { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; padding: 8px 10px; border-bottom: 1px solid #eee; align-items: center; }
@@ -28,11 +28,26 @@
         .loading { text-align: center; font-weight: bold; color: #2a5298; padding: 20px; }
         .error-msg { color: #ef4444; background: #fee2e2; padding: 15px; border-radius: 4px; border: 1px solid #fca5a5; margin-bottom: 15px; text-align: center; font-weight: bold; }
         .btn-retry { background: #2a5298; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-top: 10px; cursor: pointer; font-weight: bold;}
+        
+        .lock-container { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        .lock-container h2 { color: #1e3c72; margin-top: 0; }
+        .lock-input { width: 90%; padding: 10px; font-size: 16px; text-align: center; letter-spacing: 4px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; }
+        .lock-btn { background: #1e3c72; color: white; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; }
+        .lock-btn:hover { background: #2a5298; }
+        .lock-error { color: #ef4444; font-size: 14px; margin-top: 10px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="form-container">
+<div id="passwordScreen" class="lock-container">
+    <h2>🔒 Access Restricted</h2>
+    <p style="color: #666; font-size: 14px;">Please enter the station access code to modify incident sheets.</p>
+    <input type="password" id="stationPassword" class="lock-input" placeholder="••••" maxlength="8" onkeydown="if(event.key === 'Enter') verifyPassword()">
+    <button type="button" class="lock-btn" id="unlockBtn" onclick="verifyPassword()">Unlock Form</button>
+    <div id="passwordError" class="lock-error">Incorrect Access Code.</div>
+</div>
+
+<div class="form-container" id="mainFormArea" style="display: none;">
     <header>
         <h1>🚒 Coburg Fire Alarm Report Entry</h1>
     </header>
@@ -83,7 +98,7 @@
 
         <fieldset>
             <legend>Personnel Attendance & Crew Assignments</legend>
-            <div id="personnelStatus" class="loading">Fetching active rosters from Google Sheet...</div>
+            <div id="personnelStatus" class="loading">Waiting for authorization...</div>
             
             <div id="personnelContainer" style="display: none;">
                 <div class="personnel-header">
@@ -100,15 +115,55 @@
 </div>
 
 <script>
-    // ⚠️ CRUCIAL: Replace this string with your exact live Google Apps Script web app URL
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHfZ7sGzNvJwSW8H8bYIdC0wzPFs5p5oompUvddgyzR9nj6WYnnq4hPM2MbcqP/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx53yDmPcEvN7Ig6Yi3FghAjH6yN7Ch96WRd6NaLdk4WoYw8ib9aueeNtZKsQWdeQC6/exec";
 
     const apparatusList = ["C910", "E911", "E912", "B913", "TN916", "U917", "R918", "B923", "TN926", "POV", "SB"];
     const positionList = ["FF", "Officer", "Engineer", "AO", "Radio Operator", "900", "901", "902", "903", "904", "905", "906", "AIC"];
     
     let activeResponders = [];
 
-    window.addEventListener('DOMContentLoaded', fetchRosterData);
+    window.addEventListener('DOMContentLoaded', () => {
+        if (sessionStorage.getItem('formAuthorized') === 'true') {
+            showFormAndFetchData();
+        }
+    });
+
+    function verifyPassword() {
+        const inputVal = document.getElementById('stationPassword').value;
+        const errEl = document.getElementById('passwordError');
+        const btnEl = document.getElementById('unlockBtn');
+        
+        btnEl.innerText = "Verifying...";
+        btnEl.disabled = true;
+        errEl.style.display = "none";
+
+        // Query the API to process password logic securely on Google's end
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(inputVal)}`)
+        .then(res => res.json())
+        .then(data => {
+            btnEl.innerText = "Unlock Form";
+            btnEl.disabled = false;
+            
+            if (data.authorized === true) {
+                sessionStorage.setItem('formAuthorized', 'true');
+                showFormAndFetchData();
+            } else {
+                errEl.style.display = "block";
+                document.getElementById('stationPassword').value = "";
+            }
+        })
+        .catch(err => {
+            btnEl.innerText = "Unlock Form";
+            btnEl.disabled = false;
+            alert("Error verifying credentials with server: " + err);
+        });
+    }
+
+    function showFormAndFetchData() {
+        document.getElementById('passwordScreen').style.display = 'none';
+        document.getElementById('mainFormArea').style.display = 'block';
+        fetchRosterData();
+    }
 
     function fetchRosterData() {
         const statusEl = document.getElementById('personnelStatus');
@@ -117,7 +172,6 @@
         statusEl.style.display = "block";
         document.getElementById('personnelContainer').style.display = 'none';
 
-        // Fetch personnel roster from Google Sheet API with cache busting parameter
         fetch(`${GOOGLE_SCRIPT_URL}?action=getRoster&_cb=${new Date().getTime()}`)
         .then(res => {
             if (!res.ok) throw new Error("Server responded with HTTP " + res.status);
@@ -134,7 +188,7 @@
             }
         })
         .catch(err => {
-            showError(`Network Connection Blocked.<br><small style="font-weight:normal;color:#666;">Make sure your API URL is correct and deployed with 'Access: Anyone'.</small>`);
+            showError(`Network Connection Blocked.`);
             console.error(err);
         });
     }
@@ -195,6 +249,12 @@
     function handleFormSubmit(event) {
         event.preventDefault();
         
+        if (sessionStorage.getItem('formAuthorized') !== 'true') {
+            alert("Unauthorized action block.");
+            window.location.reload();
+            return;
+        }
+
         const payload = {
             call_number: document.getElementById('call_number').value,
             date: document.getElementById('date').value,
@@ -225,7 +285,7 @@
         .then(() => {
             alert(`Incident Record ${payload.call_number} successfully posted to Google Sheets!`);
             document.getElementById('incidentForm').reset();
-            fetchRosterData(); // Reload roster cleanly
+            fetchRosterData();
         })
         .catch(err => alert("Error saving submission entry: " + err));
     }
