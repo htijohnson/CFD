@@ -15,6 +15,13 @@
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
         .card h3 { margin: 0 0 10px 0; color: #666; font-size: 14px; text-transform: uppercase; }
         .card .value { font-size: 28px; font-weight: bold; color: #1e3c72; }
+        
+        /* Report Tool Styles */
+        .report-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .report-box h2 { margin-top: 0; font-size: 18px; color: #1e3c72; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .btn-print { background: #2a5298; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        .btn-print:hover { background: #1e3c72; }
+
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .chart-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 350px; }
         .dashboard-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
@@ -28,19 +35,48 @@
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         
         /* Shift Color Configurations */
-        .badge-a { background: #fee2e2; color: #ef4444; } /* A Shift: Red */
-        .badge-b { background: #d1e7dd; color: #10b981; } /* B Shift: Green */
-        .badge-c { background: #dbeafe; color: #2563eb; } /* C Shift: Blue */
+        .badge-a { background: #fee2e2; color: #ef4444; } 
+        .badge-b { background: #d1e7dd; color: #10b981; } 
+        .badge-c { background: #dbeafe; color: #2563eb; } 
         .badge-default { background: #e2e3e5; color: #41464b; }
         
         .controls { display: flex; gap: 10px; margin-bottom: 15px; }
         select { padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; background: white; }
         .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(244,246,249,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; color: #1e3c72; z-index: 999; }
+        
+        /* Hidden printable element setup */
+        #printableReportArea { display: none; }
+
+        /* 🖨️ STRICT CSS PRINT MEDIA RULE */
+        @media print {
+            body, .container, #dashboardContent { background: white; color: black; padding: 0; margin: 0; }
+            header, .stats-grid, .report-box, .charts-grid, .dashboard-layout, #loadingOverlay { display: none !important; }
+            #printableReportArea { display: block !important; width: 100%; }
+            table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th { background-color: #eaeaea !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            th, td { border: 1px solid #999 !important; padding: 8px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
 
 <div id="loadingOverlay" class="loading-overlay">Loading Vertical Call Database Matrix...</div>
+
+<div id="printableReportArea">
+    <h1 id="printReportTitle" style="margin-bottom: 5px;">Emergency Call Report</h1>
+    <h3 id="printReportSubtitle" style="margin-top: 0; color: #555; margin-bottom: 20px;">Generated Data</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Responder Name (Alphabetical)</th>
+                <th style="text-align: center; width: 150px;" id="printMonthColHeader">Selected Month</th>
+                <th style="text-align: center; width: 150px;">Year To Date (YTD)</th>
+            </tr>
+        </thead>
+        <tbody id="printableReportBody"></tbody>
+    </table>
+</div>
 
 <div class="container">
     <header>
@@ -54,6 +90,21 @@
             <div class="card"><h3>Busiest Month</h3><div class="value" id="statBusiestMonth">-</div></div>
             <div class="card"><h3>Busiest Shift</h3><div class="value" id="statBusiestShift">-</div></div>
             <div class="card"><h3>Total Responders</h3><div class="value" id="statTotalResponders">0</div></div>
+        </div>
+
+        <div class="report-box">
+            <h2>Generate Printable Monthly Report</h2>
+            <div class="controls" style="margin-bottom: 0;">
+                <select id="reportMonthSelect">
+                    <option value="01">January</option><option value="02">February</option>
+                    <option value="03">March</option><option value="04">April</option>
+                    <option value="05">May</option><option value="06">June</option>
+                    <option value="07">July</option><option value="08">August</option>
+                    <option value="09">September</option><option value="10">October</option>
+                    <option value="11">November</option><option value="12">December</option>
+                </select>
+                <button class="btn-print" onclick="printMonthlyReport()">Print Report</button>
+            </div>
         </div>
 
         <div class="charts-grid">
@@ -103,7 +154,8 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyvdztNeMpQBItfAdGkvkj0hdA8KzTPRFK5ldZEYzbq6BGRNzMstXHq2KFOza3QCR2E/exec";
+    // Paste your Google Web App Execution URL below
+    const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbx53yDmPcEvN7Ig6Yi3FghAjH6yN7Ch96WRd6NaLdk4WoYw8ib9aueeNtZKsQWdeQC6/exec";
 
     let globalData = [];
     let personnelNames = [];
@@ -145,11 +197,9 @@
     function processAndRender(data) {
         globalData = data;
         
-        // Dynamically find user attendance names across keys (ignoring standard operational columns)
         if (data[0]) {
             const keysToIgnore = ['call number', 'call_number', 'date', 'time', 'shift', 'totals', 'attendance'];
             
-            // Check if object has direct properties or has a nested attendance object
             if (data[0].attendance) {
                 personnelNames = Object.keys(data[0].attendance).sort();
             } else {
@@ -161,11 +211,17 @@
 
         document.getElementById('loadingOverlay').style.display = 'none';
         document.getElementById('dashboardContent').style.display = 'block';
-        document.getElementById('refreshStatus').innerText = "Live Synergized Dashboard Connected";
+        document.getElementById('refreshStatus').innerText = "Live Connected Data";
 
         generateDashboardMetrics();
         document.getElementById('filterMonth').addEventListener('change', updateFilteredTable);
         document.getElementById('filterShift').addEventListener('change', updateFilteredTable);
+        
+        // Auto-set the report dropdown to match current active calendar month
+        const currentMonthString = String(new Date().getMonth() + 1).padStart(2, '0');
+        if(document.getElementById('reportMonthSelect').querySelector(`option[value="${currentMonthString}"]`)) {
+            document.getElementById('reportMonthSelect').value = currentMonthString;
+        }
     }
 
     function generateDashboardMetrics() {
@@ -175,15 +231,12 @@
         const rankings = personnelNames.map(name => {
             let totalResponses = 0;
             globalData.forEach(call => {
-                // Read from nested attendance structure or directly from row keys
                 let value = null;
                 if (call.attendance && call.attendance[name] !== undefined) {
                     value = call.attendance[name];
                 } else if (call[name] !== undefined) {
                     value = call[name];
                 }
-                
-                // If value exists, is not 0, and not an empty placeholder string, count it as a response
                 if (value !== null && value !== 0 && value !== '0' && String(value).trim() !== "") {
                     totalResponses++;
                 }
@@ -290,6 +343,66 @@
                 </tr>`;
             }
         });
+    }
+
+    // NEW FUNCTION: Compiles the hidden print grid on the fly and hits browser print
+    function printMonthlyReport() {
+        const selectEl = document.getElementById('reportMonthSelect');
+        const selectedMonthKey = selectEl.value;
+        const selectedMonthName = selectEl.options[selectEl.selectedIndex].text;
+        
+        // Update Title Details for the page top header
+        document.getElementById('printReportTitle').innerText = `🚒 2026 Emergency Responses Attendance Report`;
+        document.getElementById('printReportSubtitle').innerText = `Report Filter Period: ${selectedMonthName} 2026 | Generated on: ${new Date().toLocaleDateString()}`;
+        document.getElementById('printMonthColHeader').innerText = `${selectedMonthName} Responses`;
+        
+        // Copy and Sort personnel alphabetically (A-Z)
+        const alphabetNames = [...personnelNames].sort((a, b) => a.localeCompare(undefined, {sensitivity: 'accent'}));
+        
+        const printBody = document.getElementById('printableReportBody');
+        printBody.innerHTML = '';
+        
+        // Compute monthly and cumulative rows
+        alphabetNames.forEach(name => {
+            let monthCount = 0;
+            let ytdCount = 0;
+            
+            globalData.forEach(call => {
+                const rawDate = call.date || call.Date;
+                const callMonth = getMonthFromDateString(rawDate);
+                
+                let attended = false;
+                let value = null;
+                
+                if (call.attendance && call.attendance[name] !== undefined) {
+                    value = call.attendance[name];
+                } else if (call[name] !== undefined) {
+                    value = call[name];
+                }
+                
+                if (value !== null && value !== 0 && value !== '0' && String(value).trim() !== "") {
+                    attended = true;
+                }
+                
+                if (attended) {
+                    ytdCount++; // Increments if it matches any month across the database record array
+                    if (callMonth === selectedMonthKey) {
+                        monthCount++;
+                    }
+                }
+            });
+            
+            // Build the row string structure inside print zone
+            printBody.innerHTML += `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td style="text-align: center; font-weight: bold;">${monthCount}</td>
+                    <td style="text-align: center; font-weight: bold; color: #1e3c72;">${ytdCount}</td>
+                </tr>`;
+        });
+        
+        // Triggers native system dialog prompt seamlessly
+        window.print();
     }
 </script>
 </body>
