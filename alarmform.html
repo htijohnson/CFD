@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coburg Incident Report Entry Form</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .form-container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 6px; margin-bottom: 25px; text-align: center; }
+        h1 { margin: 0; font-size: 22px; }
+        fieldset { border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
+        legend { font-weight: bold; color: #1e3c72; padding: 0 10px; font-size: 16px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+        input, select, textarea { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        
+        .personnel-header { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; font-weight: bold; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 8px; border-bottom: 2px solid #ddd; }
+        .personnel-row { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 10px; padding: 8px 10px; border-bottom: 1px solid #eee; align-items: center; }
+        .personnel-row:hover { background-color: #fdfdfd; }
+        .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+        .personnel-row select { padding: 5px; font-size: 13px; width: 100%; }
+        .personnel-row select:disabled { background-color: #f0f0f0; cursor: not-allowed; }
+        
+        .submit-btn { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; transition: background 0.2s; }
+        .submit-btn:hover { background: #059669; }
+        .loading { text-align: center; font-weight: bold; color: #2a5298; padding: 20px; }
+        .error-msg { color: #ef4444; background: #fee2e2; padding: 15px; border-radius: 4px; border: 1px solid #fca5a5; margin-bottom: 15px; text-align: center; font-weight: bold; }
+        .btn-retry { background: #2a5298; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-top: 10px; cursor: pointer; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <header>
+        <h1>🚒 Coburg Fire Alarm Report Entry</h1>
+    </header>
+
+    <form id="incidentForm" onsubmit="handleFormSubmit(event)">
+        <fieldset>
+            <legend>General Call Information</legend>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="call_number">Alarm / Call #</label>
+                    <input type="text" id="call_number" required placeholder="e.g. 26-0001">
+                </div>
+                <div class="form-group">
+                    <label for="date">Alarm Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="time">Alarm Time</label>
+                    <input type="time" id="time" required>
+                </div>
+            </div>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="shift">Shift</label>
+                    <select id="shift" required>
+                        <option value="">-- Select Shift --</option>
+                        <option value="A">A Shift</option>
+                        <option value="B">B Shift</option>
+                        <option value="C">C Shift</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="district">District Location</label>
+                    <select id="district">
+                        <option value="CITY">City</option>
+                        <option value="RURAL">Rural</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="response_type">Response Type</label>
+                    <select id="response_type">
+                        <option value="EMERGENCY">Emergency</option>
+                        <option value="NON-EMERGENCY">Non-Emergency</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Personnel Attendance & Crew Assignments</legend>
+            <div id="personnelStatus" class="loading">Fetching active rosters from Google Sheet...</div>
+            
+            <div id="personnelContainer" style="display: none;">
+                <div class="personnel-header">
+                    <div>Responder Name</div>
+                    <div>Apparatus Assigned</div>
+                    <div>Riding Position</div>
+                </div>
+                <div id="personnelRows"></div>
+            </div>
+        </fieldset>
+
+        <button type="submit" class="submit-btn">Submit Incident Report to Spreadsheet</button>
+    </form>
+</div>
+
+<script>
+    // ⚠️ CRUCIAL: Replace this string with your exact live Google Apps Script web app URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx53yDmPcEvN7Ig6Yi3FghAjH6yN7Ch96WRd6NaLdk4WoYw8ib9aueeNtZKsQWdeQC6/exec";
+
+    const apparatusList = ["C910", "E911", "E912", "B913", "TN916", "U917", "R918", "B923", "TN926", "POV", "SB"];
+    const positionList = ["FF", "Officer", "Engineer", "AO", "Radio Operator", "900", "901", "902", "903", "904", "905", "906", "AIC"];
+    
+    let activeResponders = [];
+
+    window.addEventListener('DOMContentLoaded', fetchRosterData);
+
+    function fetchRosterData() {
+        const statusEl = document.getElementById('personnelStatus');
+        statusEl.className = "loading";
+        statusEl.innerHTML = "Fetching active rosters from Google Sheet...";
+        statusEl.style.display = "block";
+        document.getElementById('personnelContainer').style.display = 'none';
+
+        // Fetch personnel roster from Google Sheet API with cache busting parameter
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getRoster&_cb=${new Date().getTime()}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Server responded with HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showError("Google Apps Script Error: " + data.error);
+            } else if (data.personnel && data.personnel.length > 0) {
+                activeResponders = data.personnel;
+                buildPersonnelFormMatrix();
+            } else {
+                showError("No active personnel records were found in the 'Personnel' tab.");
+            }
+        })
+        .catch(err => {
+            showError(`Network Connection Blocked.<br><small style="font-weight:normal;color:#666;">Make sure your API URL is correct and deployed with 'Access: Anyone'.</small>`);
+            console.error(err);
+        });
+    }
+
+    function showError(message) {
+        const statusEl = document.getElementById('personnelStatus');
+        statusEl.className = "error-msg";
+        statusEl.innerHTML = `<div>❌ ${message}</div><button type="button" class="btn-retry" onclick="fetchRosterData()">Retry Connection</button>`;
+    }
+
+    function buildPersonnelFormMatrix() {
+        document.getElementById('personnelStatus').style.display = 'none';
+        document.getElementById('personnelContainer').style.display = 'block';
+        
+        const rowsContainer = document.getElementById('personnelRows');
+        rowsContainer.innerHTML = '';
+
+        activeResponders.forEach((name, idx) => {
+            const appOptions = ['<option value="">-- Choose Unit --</option>']
+                .concat(apparatusList.map(a => `<option value="${a}">${a}</option>`)).join('');
+                
+            const posOptions = ['<option value="">-- Choose Assignment --</option>']
+                .concat(positionList.map(p => `<option value="${p}">${p}</option>`)).join('');
+
+            rowsContainer.innerHTML += `
+                <div class="personnel-row">
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check_${idx}" value="${name}" onchange="toggleSelects(${idx})">
+                            ${name}
+                        </label>
+                    </div>
+                    <div>
+                        <select id="app_${idx}" disabled required>
+                            ${appOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <select id="pos_${idx}" disabled required>
+                            ${posOptions}
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function toggleSelects(idx) {
+        const isChecked = document.getElementById(`check_${idx}`).checked;
+        document.getElementById(`app_${idx}`).disabled = !isChecked;
+        document.getElementById(`pos_${idx}`).disabled = !isChecked;
+        if(!isChecked) {
+            document.getElementById(`app_${idx}`).value = "";
+            document.getElementById(`pos_${idx}`).value = "";
+        }
+    }
+
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        const payload = {
+            call_number: document.getElementById('call_number').value,
+            date: document.getElementById('date').value,
+            time: document.getElementById('time').value,
+            shift: document.getElementById('shift').value,
+            district: document.getElementById('district').value,
+            response_type: document.getElementById('response_type').value,
+            attendance: {}
+        };
+
+        activeResponders.forEach((name, idx) => {
+            const checked = document.getElementById(`check_${idx}`).checked;
+            if (checked) {
+                const app = document.getElementById(`app_${idx}`).value;
+                const pos = document.getElementById(`pos_${idx}`).value;
+                payload.attendance[name] = `${app} - ${pos}`;
+            } else {
+                payload.attendance[name] = "";
+            }
+        });
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert(`Incident Record ${payload.call_number} successfully posted to Google Sheets!`);
+            document.getElementById('incidentForm').reset();
+            fetchRosterData(); // Reload roster cleanly
+        })
+        .catch(err => alert("Error saving submission entry: " + err));
+    }
+</script>
+</body>
+</html>
