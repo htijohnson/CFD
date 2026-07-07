@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coburg Incident Input Form</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .form-container { max-width: 850px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .form-header { background: #1e3c72; color: white; padding: 15px 20px; border-radius: 6px; margin-bottom: 25px; text-align: center; }
+        .form-header h2 { margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-title { font-size: 15px; font-weight: bold; color: #1e3c72; border-bottom: 2px solid #eef0f5; padding-bottom: 5px; margin-top: 20px; margin-bottom: 15px; text-transform: uppercase; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        label { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #444; }
+        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        input:focus, select:focus { border-color: #2a5298; outline: none; }
+        .radio-group { display: flex; gap: 20px; padding: 10px 0; }
+        .radio-label { display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; }
+        
+        .roster-box { background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #eef0f2; }
+        .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .personnel-row { display: flex; align-items: center; background: white; padding: 8px 12px; border-radius: 4px; border: 1px solid #e2e8f0; gap: 8px; }
+        .personnel-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .unit-select, .pos-select { padding: 5px; font-size: 12px; width: 75px; }
+        
+        .submit-btn { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 25px; transition: opacity 0.2s; }
+        .submit-btn:hover { opacity: 0.95; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <div class="form-header">
+        <h2>🚒 Coburg Fire Alarm Report Intake Form</h2>
+    </div>
+
+    <form id="incidentForm">
+        <div class="section-title">General Administration</div>
+        <div class="grid-3">
+            <div class="form-group">
+                <label>Location Profile</label>
+                <div class="radio-group">
+                    <label class="radio-label"><input type="radio" name="location_type" value="City" checked> City</label>
+                    <label class="radio-label"><input type="radio" name="location_type" value="Rural"> Rural</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="alarm_number">Alarm #</label>
+                <input type="text" id="alarm_number" required placeholder="e.g., 26-042">
+            </div>
+            <div class="form-group">
+                <label for="shift">Shift</label>
+                <select id="shift" required>
+                    <option value="">-- Choose Shift --</option>
+                    <option value="A">A Shift</option>
+                    <option value="B">B Shift</option>
+                    <option value="C">C Shift</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="date">Alarm Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label for="time">Time of Dispatch (24hr)</label>
+                <input type="time" id="time" required>
+            </div>
+        </div>
+
+        <div class="section-title">Personnel Assignment Matrix</div>
+        <div class="roster-box">
+            <div id="rosterGrid" class="roster-grid">
+                <p style="grid-column: 1/-1; text-align: center; color: #666; font-style: italic;">Syncing lists from spreadsheet structure...</p>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Commit Entry to Spreadsheet</button>
+        <div id="status"></div>
+    </form>
+</div>
+
+<script>
+    // Make sure this matches your exact active Web App deployment URL string!
+    const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyvdztNeMpQBItfAdGkvkj0hdA8KzTPRFK5ldZEYzbq6BGRNzMstXHq2KFOza3QCR2E/exec";
+
+    window.addEventListener('DOMContentLoaded', () => {
+        fetch(GOOGLE_SCRIPT_API_URL)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.length === 0) throw new Error("Empty payload returned");
+            
+            const statusMap = data[0]?.personnel_status || {};
+            const fleetUnits = data[0]?.apparatus_fleet || [];
+            const positionRoles = data[0]?.position_roles || [];
+            const activeResponders = Object.keys(data[0]?.attendance || {})
+                                           .filter(name => statusMap[name] !== 0)
+                                           .sort();
+            
+            const grid = document.getElementById('rosterGrid');
+            grid.innerHTML = ''; 
+            
+            activeResponders.forEach(name => {
+                // Safe unique ID string replacement for names with spaces/commas
+                const safeId = name.replace(/[^a-zA-Z0-9]/g, '');
+
+                let appOptions = `<option value="">- Out -</option>`;
+                fleetUnits.forEach(unit => { 
+                    if(unit) appOptions += `<option value="${unit}">${unit}</option>`; 
+                });
+
+                let posOptions = `<option value="">- Role -</option>`;
+                positionRoles.forEach(role => { 
+                    if(role) posOptions += `<option value="${role}">${role}</option>`; 
+                });
+
+                grid.innerHTML += `
+                    <div class="personnel-row">
+                        <span class="personnel-name" title="${name}">${name}</span>
+                        <select class="unit-select" data-person="${name}" data-safeid="${safeId}">
+                            ${appOptions}
+                        </select>
+                        <select class="pos-select" id="pos-${safeId}" disabled>
+                            ${posOptions}
+                        </select>
+                    </div>
+                `;
+            });
+
+            // Monitor when unit selections shift
+            grid.addEventListener('change', (e) => {
+                if (e.target.classList.contains('unit-select')) {
+                    const safeId = e.target.getAttribute('data-safeid');
+                    const posSelect = document.getElementById(`pos-${safeId}`);
+                    if (posSelect) {
+                        if (e.target.value === "") {
+                            posSelect.value = "";
+                            posSelect.disabled = true;
+                        } else {
+                            posSelect.disabled = false;
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('rosterGrid').innerHTML = '<p style="color:red; text-align:center;">Network communication breakdown parsing data lists.</p>';
+        });
+    });
+
+    document.getElementById('incidentForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const status = document.getElementById('status');
+        status.style.color = '#333';
+        status.innerText = "Transmitting record line...";
+
+        const attendanceMap = {};
+        const selects = document.querySelectorAll('.unit-select');
+        
+        selects.forEach(select => {
+            const name = select.getAttribute('data-person');
+            const safeId = select.getAttribute('data-safeid');
+            const appVal = select.value;
+            
+            if (appVal) {
+                const posSelect = document.getElementById(`pos-${safeId}`);
+                attendanceMap[name] = {
+                    apparatus: appVal,
+                    position: posSelect ? posSelect.value : ""
+                };
+            }
+        });
+
+        const dataPayload = {
+            action: "submit_alarm",
+            alarm_number: document.getElementById('alarm_number').value,
+            date: document.getElementById('date').value,
+            time: document.getElementById('time').value,
+            shift: document.getElementById('shift').value,
+            attendance_map: attendanceMap
+        };
+
+        fetch(GOOGLE_SCRIPT_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataPayload)
+        })
+        .then(() => {
+            status.style.color = 'green';
+            status.innerText = "🎉 Entry added completely with Unit & Position!";
+            document.getElementById('incidentForm').reset();
+            document.querySelectorAll('.pos-select').forEach(s => s.disabled = true);
+        })
+        .catch(err => {
+            status.style.color = 'red';
+            status.innerText = "Transmission script failure.";
+        });
+    });
+</script>
+</body>
+</html>
