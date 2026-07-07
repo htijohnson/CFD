@@ -81,6 +81,9 @@
                             <option value="01">January</option><option value="02">February</option>
                             <option value="03">March</option><option value="04">April</option>
                             <option value="05">May</option><option value="06">June</option>
+                            <option value="07">July</option><option value="08">August</option>
+                            <option value="09">September</option><option value="10">October</option>
+                            <option value="11">November</option><option value="12">December</option>
                         </select>
                         <select id="filterShift">
                             <option value="all">All Shifts</option>
@@ -129,7 +132,7 @@
 
     function getMonthFromDateString(dateStr) {
         if (!dateStr) return null;
-        if (dateStr.includes('/')) {
+        if (typeof dateStr === 'string' && dateStr.includes('/')) {
             return String(dateStr.split('/')[0]).padStart(2, '0');
         }
         const parsedDate = new Date(dateStr);
@@ -141,8 +144,19 @@
 
     function processAndRender(data) {
         globalData = data;
-        if (data[0] && data[0].attendance) {
-            personnelNames = Object.keys(data[0].attendance).sort();
+        
+        // Dynamically find user attendance names across keys (ignoring standard operational columns)
+        if (data[0]) {
+            const keysToIgnore = ['call number', 'call_number', 'date', 'time', 'shift', 'totals', 'attendance'];
+            
+            // Check if object has direct properties or has a nested attendance object
+            if (data[0].attendance) {
+                personnelNames = Object.keys(data[0].attendance).sort();
+            } else {
+                personnelNames = Object.keys(data[0]).filter(k => {
+                    return !keysToIgnore.includes(k.toLowerCase());
+                }).sort();
+            }
         }
 
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -161,7 +175,18 @@
         const rankings = personnelNames.map(name => {
             let totalResponses = 0;
             globalData.forEach(call => {
-                if (call.attendance && call.attendance[name] === 1) totalResponses++;
+                // Read from nested attendance structure or directly from row keys
+                let value = null;
+                if (call.attendance && call.attendance[name] !== undefined) {
+                    value = call.attendance[name];
+                } else if (call[name] !== undefined) {
+                    value = call[name];
+                }
+                
+                // If value exists, is not 0, and not an empty placeholder string, count it as a response
+                if (value !== null && value !== 0 && value !== '0' && String(value).trim() !== "") {
+                    totalResponses++;
+                }
             });
             return { name: name, count: totalResponses };
         }).sort((a,b) => b.count - a.count);
@@ -172,28 +197,37 @@
             lBody.innerHTML += `<tr><td><strong>#${i+1}</strong></td><td>${p.name}</td><td style="text-align: right; font-weight: bold; color: #2a5298;">${p.count}</td></tr>`;
         });
 
-        const mLabels = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun' };
-        const mCounts = { '01': 0, '02': 0, '03': 0, '04': 0, '05': 0, '06': 0 };
+        const mLabels = { 
+            '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun',
+            '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
+        };
+        const mCounts = { 
+            '01': 0, '02': 0, '03': 0, '04': 0, '05': 0, '06': 0,
+            '07': 0, '08': 0, '09': 0, '10': 0, '11': 0, '12': 0 
+        };
         const sCounts = { 'A': 0, 'B': 0, 'C': 0 };
 
         globalData.forEach(call => {
-            const monthKey = getMonthFromDateString(call.date);
+            const rawDate = call.date || call.Date;
+            const monthKey = getMonthFromDateString(rawDate);
             if (monthKey && mCounts[monthKey] !== undefined) {
                 mCounts[monthKey]++;
             }
-            if (call.shift) {
-                const s = String(call.shift).trim().toUpperCase();
+            
+            const rawShift = call.shift || call.Shift;
+            if (rawShift) {
+                const s = String(rawShift).trim().toUpperCase();
                 if (sCounts[s] !== undefined) sCounts[s]++;
             }
         });
 
         let topMVal = -1, topMKey = '';
         Object.keys(mCounts).forEach(k => { if (mCounts[k] > topMVal) { topMVal = mCounts[k]; topMKey = mLabels[k]; } });
-        document.getElementById('statBusiestMonth').innerText = topMKey ? `${topMKey} (${topMVal})` : 'N/A';
+        document.getElementById('statBusiestMonth').innerText = topMVal > 0 ? `${topMKey} (${topMVal})` : 'N/A';
 
         let topSVal = -1, topSKey = '';
         Object.keys(sCounts).forEach(k => { if (sCounts[k] > topSVal) { topSVal = sCounts[k]; topSKey = k; } });
-        document.getElementById('statBusiestShift').innerText = topSKey ? `${topSKey} Shift` : 'N/A';
+        document.getElementById('statBusiestShift').innerText = topSVal > 0 ? `${topSKey} Shift` : 'N/A';
 
         if (monthChartInstance) monthChartInstance.destroy();
         if (shiftChartInstance) shiftChartInstance.destroy();
@@ -204,7 +238,6 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // Chart backgrounds configured to mirror A: Red, B: Green, C: Blue
         shiftChartInstance = new Chart(document.getElementById('shiftChart').getContext('2d'), {
             type: 'pie',
             data: { 
@@ -229,25 +262,30 @@
         globalData.forEach(call => {
             let matchesM = true, matchesS = true;
             
+            const rawDate = call.date || call.Date;
+            const rawShift = call.shift || call.Shift;
+            const rawCallNum = call.call_number || call['Call Number'] || '-';
+            const rawTime = call.time || call.TIME || '-';
+            
             if (selM !== 'all') {
-                const rowM = getMonthFromDateString(call.date);
+                const rowM = getMonthFromDateString(rawDate);
                 if (rowM !== selM) matchesM = false;
             }
-            if (selS !== 'all' && String(call.shift).trim().toUpperCase() !== selS) matchesS = false;
+            if (selS !== 'all' && String(rawShift).trim().toUpperCase() !== selS) matchesS = false;
 
             if (matchesM && matchesS) {
-                const sRaw = call.shift ? String(call.shift).trim() : '-';
+                const sRaw = rawShift ? String(rawShift).trim() : '-';
                 const sClass = ['a','b','c'].includes(sRaw.toLowerCase()) ? sRaw.toLowerCase() : 'default';
                 
-                let displayDate = call.date || '-';
-                if (displayDate.includes('00:00:00')) {
+                let displayDate = rawDate || '-';
+                if (typeof displayDate === 'string' && displayDate.includes('00:00:00')) {
                     displayDate = displayDate.split(' 00:00:00')[0];
                 }
 
                 tbody.innerHTML += `<tr>
-                    <td><strong>${call.call_number || '-'}</strong></td>
+                    <td><strong>${rawCallNum}</strong></td>
                     <td>${displayDate}</td>
-                    <td>${call.time || '-'}</td>
+                    <td>${rawTime}</td>
                     <td><span class="badge badge-${sClass}">${sRaw}</span></td>
                 </tr>`;
             }
