@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet Portal - Coburg Fire District</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cabinet+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0f1115;
+            --bg-card: #161920;
+            --bg-card-hover: #1e222b;
+            --border-color: rgba(255, 255, 255, 0.06);
+            
+            --primary: #dc2626; /* Fire Crimson */
+            --primary-hover: #b91c1c;
+            --primary-glow: rgba(220, 38, 38, 0.25);
+            
+            --accent: #f59e0b; /* Amber/Gold Alert Tint */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Cabinet Grotesk', 'Inter', sans-serif;
+            
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Top Bar Navigation */
+        .navbar {
+            background-color: rgba(22, 25, 32, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 2rem;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        .brand-logo-img {
+            height: 42px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .brand-text {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .brand-text span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Main Workspace Container */
+        .dashboard-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .welcome-header {
+            margin-bottom: 3rem;
+        }
+
+        .welcome-header h1 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 2.5rem;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        /* Grid Matrix Layout */
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Dashboard Link Cards */
+        .portal-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 160px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-glow) 0%, transparent 50%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-4px);
+            background-color: var(--bg-card-hover);
+            border-color: rgba(220, 38, 38, 0.3);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 
+                        0 0 0 1px rgba(220, 38, 38, 0.1);
+        }
+
+        .portal-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 2;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon-frame {
+            width: 48px;
+            height: 48px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .portal-card:hover .card-icon-frame {
+            background-color: rgba(220, 38, 38, 0.15);
+            border-color: rgba(220, 38, 38, 0.3);
+            color: var(--primary);
+        }
+
+        .action-arrow {
+            color: var(--text-muted);
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: var(--transition);
+        }
+
+        .portal-card:hover .action-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--accent);
+        }
+
+        .card-info {
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-title {
+            font-family: var(--font-sans);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.01em;
+        }
+
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Embedded Workspace View Styles */
+        .workspace-view {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: calc(100vh - 72px);
+            background-color: var(--bg-main);
+            position: relative;
+            z-index: 5;
+        }
+
+        .workspace-control-bar {
+            background-color: #161920;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-back {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-back:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .workspace-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .iframe-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: white;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Footer info block */
+        .footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding: 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background-color: #0b0c0f;
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 0 1rem; }
+            .desktop-only { display: none; }
+            .dashboard-container { padding: 2rem 1rem; }
+            .welcome-header h1 { font-size: 2rem; }
+            .link-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <nav class="navbar">
+        <a onclick="showDashboard()" class="nav-brand" style="cursor: pointer;">
+            <img class="brand-logo-img" src="https://www.coburgfire.org/uploads/3/4/3/9/3439095/published/coburg-fire-logo.jpeg?1521913602" alt="Coburg Fire Logo">
+            <div class="brand-text">Coburg Fire <span>Intranet</span></div>
+        </a>
+        <ul class="nav-links desktop-only">
+            <li><a onclick="showDashboard()" id="navHome" class="active">Dashboard</a></li>
+            <li><a href="https://www.coburgfire.org/" target="_blank">Public Site</a></li>
+            <li><a href="https://www.coburgfire.org/about-us.html" target="_blank">About Us</a></li>
+            <li><a href="https://www.coburgfire.org/resources.html" target="_blank">Resources</a></li>
+        </ul>
+    </nav>
+
+    <main class="dashboard-container" id="mainDashboardView">
+        <header class="welcome-header">
+            <h1>Station Operations</h1>
+            <p>Authorized personnel access terminal. Select an application module below to load its workspace.</p>
+        </header>
+
+        <div class="link-grid">
+
+            <div onclick="openInWorkspace('file://cfdnas/share/shared/_JJ/intranet/2026calls.html', '2026 Emergency Calls Dashboard')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">2026 Emergency Calls</div>
+                    <div class="card-desc">Launch the interactive analytics module to view incident logs, shift metrics, and responder rankings.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('https://www.coburgfire.org/uploads/3/4/3/9/3439095/coburgphonelist.pdf', 'Phone Roster Directory')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Phone Roster</div>
+                    <div class="card-desc">Access internal emergency contacts, administrative directory, and department extensions.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('https://app.targetsolutions.com/auth/index.cfm?action=login.showlogin&customerid=31941&customerpath=coburg', 'Target Solutions Training')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Target Solutions</div>
+                    <div class="card-desc">Log into training modules, review required training assignments, and track certifications.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('https://coeapps.eugene-or.gov/ruralfirecad', 'CAD Live Monitoring System')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">CAD Monitoring System</div>
+                    <div class="card-desc">View real-time dispatch entries, incident status maps, and rural fire activity feeds.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('file://cfdnas/share/shared/_JJ/intranet/staffcalendar.pdf', 'Staff Shift Calendar')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Staff Shift Calendar</div>
+                    <div class="card-desc">Review local crew assignments, scheduled tours, and regional fire dispatch operations schedules.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('file://cfdnas/share/shared/_Chad/Alarm%20Desk%20Forms/alarmreportform.pdf', 'Alarm Report Submission Desk')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Alarm Report Desk</div>
+                    <div class="card-desc">Open operational response logs and submit incident summary declarations.</div>
+                </div>
+            </div>
+
+            <div onclick="openInWorkspace('file://cfdnas/share/shared/_JJ/MSDS/', 'MSDS Hazmat Safety Logbook')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l4 2.22v4.44a6.67 6.67 0 0 1-4 6.11 6.67 6.67 0 0 1-4-6.11V4.22z"/><path d="M12 18.22V22"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">MSDS Safety Logbook</div>
+                    <div class="card-desc">Browse Material Safety Data Sheets for Hazmat protocols and chemical inventory profiles.</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="workspaceView" class="workspace-view">
+        <div class="workspace-control-bar">
+            <button class="btn-back" onclick="showDashboard()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Back to Dashboard
+            </button>
+            <div class="workspace-title" id="workspaceTitle">Loading Module...</div>
+            <div style="width: 140px;"></div> </div>
+        <div class="iframe-container">
+            <iframe id="appSandboxFrame" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <footer class="footer" id="appFooter">
+        &copy; 2026 Coburg Fire District. Internal Operations Portal. All Rights Reserved.
+    </footer>
+
+    <script>
+        const dashboardView = document.getElementById('mainDashboardView');
+        const workspaceView = document.getElementById('workspaceView');
+        const appFrame = document.getElementById('appSandboxFrame');
+        const wsTitle = document.getElementById('workspaceTitle');
+        const footer = document.getElementById('appFooter');
+        const navHome = document.getElementById('navHome');
+
+        function openInWorkspace(url, title) {
+            wsTitle.innerText = title;
+            appFrame.src = url;
+            
+            dashboardView.style.display = 'none';
+            footer.style.display = 'none';
+            workspaceView.style.display = 'flex';
+            navHome.classList.remove('active');
+        }
+
+        function showDashboard() {
+            appFrame.src = 'about:blank';
+            workspaceView.style.display = 'none';
+            
+            dashboardView.style.display = 'block';
+            footer.style.display = 'block';
+            navHome.classList.add('active');
+        }
+    </script>
+</body>
+</html>
