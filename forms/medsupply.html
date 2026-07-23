@@ -661,7 +661,7 @@
           });
 
           deleteBtnEl.addEventListener('click', async () => {
-            const confirmed = confirm(`Are you sure you want to remove "${item.name}" from the active inventory?\n\nThis will mark its remove it from Medical Supply.`);
+            const confirmed = confirm(`Are you sure you want to remove "${item.name}" from the active inventory?\n\nThis will remove it from Medical Supply.`);
             if (!confirmed) return;
 
             overlayTitle.innerText = "Deleting Item...";
