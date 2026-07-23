@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medical Supply Inspection Dashboard (TEST MODE)</title>
+  <title>Medical Supply Inspection Dashboard</title>
   <style>
     :root {
       --bg-color: #f4f7f6;
@@ -34,21 +34,12 @@
       margin-bottom: 24px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       flex-wrap: wrap;
       gap: 16px;
     }
 
-    h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-    }
-
-    .subtitle {
-      color: #e67e22;
-      font-weight: bold;
-      margin: 0;
-    }
+    h1 { margin: 0; font-size: 28px; }
 
     .btn-history {
       background-color: #ffffff;
@@ -104,16 +95,8 @@
       white-space: nowrap;
     }
 
-    .tab-btn:hover {
-      background-color: #eaeded;
-      color: var(--text-main);
-    }
-
-    .tab-btn.active {
-      background-color: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
+    .tab-btn:hover { background-color: #eaeded; color: var(--text-main); }
+    .tab-btn.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
 
     .tab-status {
       font-size: 12px;
@@ -123,20 +106,10 @@
       color: var(--text-main);
     }
 
-    .tab-btn.active .tab-status {
-      background-color: rgba(255, 255, 255, 0.25);
-      color: #fff;
-    }
+    .tab-btn.active .tab-status { background-color: rgba(255, 255, 255, 0.25); color: #fff; }
+    .tab-btn.complete-tab .tab-status { background-color: var(--success-bg); color: var(--success-text); }
 
-    .tab-btn.complete-tab .tab-status {
-      background-color: var(--success-bg);
-      color: var(--success-text);
-    }
-
-    .shelf-section {
-      margin-bottom: 32px;
-    }
-
+    .shelf-section { margin-bottom: 32px; }
     .shelf-title {
       font-size: 20px;
       margin-bottom: 16px;
@@ -163,73 +136,67 @@
       transition: all 0.2s ease;
     }
 
-    .item-card.verified {
-      border-color: #a8e6cf !important;
-      box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);
-    }
+    .item-card.verified { border-color: #a8e6cf !important; box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15); }
+    .item-card.out-of-stock { border-left: 6px solid var(--danger-text); background-color: #fffaf9; }
+    .item-card.low-stock { border-left: 6px solid var(--warning-text); background-color: #fffef9; }
+    .item-card.in-stock { border-left: 6px solid var(--success-text); }
 
-    .item-card.out-of-stock {
-      border-left: 6px solid var(--danger-text);
-      background-color: #fffaf9;
-    }
-
-    .item-card.low-stock {
-      border-left: 6px solid var(--warning-text);
-      background-color: #fffef9;
-    }
-
-    .item-card.in-stock {
-      border-left: 6px solid var(--success-text);
-    }
-
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .item-name {
-      font-weight: 600;
-      font-size: 16px;
-      padding-right: 8px;
-    }
-
-    .check-badge {
-      font-size: 11px;
-      font-weight: bold;
-      padding: 3px 6px;
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 2px 6px;
       border-radius: 4px;
-      background: #eee;
-      color: #777;
-      white-space: nowrap;
+      transition: background 0.2s ease;
+      opacity: 0.7;
     }
 
-    .verified .check-badge {
-      background: var(--success-bg);
-      color: var(--success-text);
-    }
+    .btn-icon:hover { opacity: 1; background-color: #edf2f7; }
+    .btn-delete:hover { background-color: var(--danger-bg); }
 
-    .item-details {
+    .add-item-card {
+      background: #f8fafc;
+      border: 2px dashed var(--primary);
+      border-radius: 8px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      font-size: 14px;
-    }
-
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
+      cursor: pointer;
+      min-height: 220px;
+      transition: all 0.2s ease;
     }
 
-    .label {
-      color: var(--text-muted);
+    .add-item-card:hover { background: #ebf5fb; border-color: var(--primary-dark); }
+    .add-item-btn-text { color: var(--primary); font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+
+    .add-item-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      background: #fff;
     }
 
-    .val {
-      font-weight: 600;
-    }
+    .add-form-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .btn-add-submit { background: var(--success-text); color: #fff; border: none; padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; }
+    .btn-add-cancel { background: #bdc3c7; color: #fff; border: none; padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+    .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .item-name { font-weight: 600; font-size: 16px; padding-right: 8px; }
+    .header-right { display: flex; align-items: center; gap: 4px; }
+    .check-badge { font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 4px; background: #eee; color: #777; white-space: nowrap; margin-right: 4px; }
+    .verified .check-badge { background: var(--success-bg); color: var(--success-text); }
+
+    .item-details { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; }
+    .label { color: var(--text-muted); }
+    .val { font-weight: 600; }
 
     .stock-input {
       width: 75px;
@@ -249,13 +216,7 @@
       box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
     }
 
-    .status-badge {
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
+    .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .badge-ok { background: var(--success-bg); color: var(--success-text); }
     .badge-low { background: var(--warning-bg); color: var(--warning-text); }
     .badge-empty { background: var(--danger-bg); color: var(--danger-text); }
@@ -301,15 +262,8 @@
       transition: all 0.2s ease;
     }
 
-    .btn-verify:hover {
-      background-color: #e2e8f0;
-    }
-
-    .verified .btn-verify {
-      background-color: var(--success-bg);
-      border-color: var(--success-text);
-      color: var(--success-text);
-    }
+    .btn-verify:hover { background-color: #e2e8f0; }
+    .verified .btn-verify { background-color: var(--success-bg); border-color: var(--success-text); color: var(--success-text); }
 
     .inspection-bar {
       position: fixed;
@@ -327,94 +281,21 @@
       gap: 16px;
     }
 
-    .progress-container {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-grow: 1;
-      max-width: 400px;
-    }
+    .progress-container { display: flex; align-items: center; gap: 16px; flex-grow: 1; max-width: 400px; }
+    .progress-bar-bg { width: 100%; height: 14px; background-color: #e2e8f0; border-radius: 7px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background-color: var(--primary); transition: width 0.3s ease, background-color 0.3s ease; }
+    .progress-bar-fill.complete { background-color: var(--success-text); }
 
-    .progress-bar-bg {
-      width: 100%;
-      height: 14px;
-      background-color: #e2e8f0;
-      border-radius: 7px;
-      overflow: hidden;
-    }
+    .inspector-box { display: flex; flex-direction: column; gap: 4px; }
+    .inspector-input { padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 6px; width: 180px; transition: all 0.2s ease; }
+    .inspector-input.error { border-color: var(--danger-text); background-color: var(--danger-bg); }
 
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      background-color: var(--primary);
-      transition: width 0.3s ease, background-color 0.3s ease;
-    }
+    .btn-submit { background-color: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+    .btn-submit:hover { background-color: var(--primary-dark); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
 
-    .progress-bar-fill.complete {
-      background-color: var(--success-text);
-    }
-
-    .inspector-box {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .inspector-input {
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 600;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      width: 160px;
-      transition: all 0.2s ease;
-    }
-
-    .inspector-input.error {
-      border-color: var(--danger-text);
-      background-color: var(--danger-bg);
-    }
-
-    .btn-submit {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-submit:hover {
-      background-color: var(--primary-dark);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .btn-test {
-      background-color: #e67e22;
-      color: white;
-      border: none;
-      padding: 12px 16px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-test:hover {
-      background-color: #d35400;
-    }
-
-    /* GREY-OUT LOADING OVERLAY */
     .overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       background-color: rgba(44, 62, 80, 0.7);
       backdrop-filter: blur(3px);
       z-index: 9999;
@@ -428,32 +309,13 @@
       transition: opacity 0.3s ease;
     }
 
-    .overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+    .spinner { width: 50px; height: 50px; border: 5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #ffffff;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* PRIOR INSPECTIONS MODAL STYLES */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       background-color: rgba(44, 62, 80, 0.6);
       backdrop-filter: blur(4px);
       z-index: 9000;
@@ -465,158 +327,99 @@
       transition: opacity 0.2s ease;
     }
 
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal-card { background: #ffffff; width: 90%; max-width: 850px; max-height: 85vh; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+    .modal-card.small { max-width: 450px; }
+    .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+    .modal-header h2 { margin: 0; font-size: 20px; color: var(--text-main); }
+    .close-btn { background: none; border: none; font-size: 24px; font-weight: bold; color: var(--text-muted); cursor: pointer; padding: 0 8px; }
+    .close-btn:hover { color: var(--danger-text); }
+    
+    .modal-nav-tabs { display: flex; gap: 8px; padding: 12px 24px 0 24px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+    .modal-tab-btn { padding: 8px 16px; border: 1px solid transparent; border-bottom: none; background: transparent; font-weight: 600; font-size: 14px; color: var(--text-muted); cursor: pointer; border-radius: 6px 6px 0 0; }
+    .modal-tab-btn.active { background: #ffffff; border-color: var(--border); color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-    .modal-card {
-      background: #ffffff;
-      width: 90%;
-      max-width: 800px;
-      max-height: 85vh;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex-grow: 1; }
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+    .history-item { border: 1px solid var(--border); border-radius: 8px; background: #fff; overflow: hidden; transition: all 0.2s ease; }
+    .history-summary { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background-color: #ffffff; user-select: none; }
+    .history-summary:hover { background-color: #f8fafc; }
+    .history-date { font-weight: 700; font-size: 15px; color: var(--text-main); }
+    .history-meta { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .history-details { display: none; padding: 16px; background-color: #fafbfc; border-top: 1px solid var(--border); }
+    .history-item.open .history-details { display: block; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .history-table th, .history-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .history-table th { background-color: #edf2f7; color: var(--text-main); font-weight: 600; }
 
-    .modal-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #f8fafc;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      font-size: 20px;
-      color: var(--text-main);
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      font-weight: bold;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 0 8px;
-    }
-
-    .close-btn:hover {
-      color: var(--danger-text);
-    }
-
-    .modal-body {
-      padding: 20px 24px;
-      overflow-y: auto;
-      flex-grow: 1;
-    }
-
-    .history-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .history-item {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #fff;
-      overflow: hidden;
-      transition: all 0.2s ease;
-    }
-
-    .history-summary {
-      padding: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      background-color: #ffffff;
-      user-select: none;
-    }
-
-    .history-summary:hover {
-      background-color: #f8fafc;
-    }
-
-    .history-date {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--text-main);
-    }
-
-    .history-meta {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .history-details {
-      display: none;
-      padding: 16px;
-      background-color: #fafbfc;
-      border-top: 1px solid var(--border);
-    }
-
-    .history-item.open .history-details {
-      display: block;
-    }
-
-    .history-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .history-table th, .history-table td {
-      padding: 8px 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .history-table th {
-      background-color: #edf2f7;
-      color: var(--text-main);
-      font-weight: 600;
-    }
+    .btn-reactivate { background-color: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-text); font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }
+    .btn-reactivate:hover { background-color: var(--success-text); color: white; }
   </style>
 </head>
 <body>
 
-  <!-- Fullscreen Grey Overlay -->
+  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="overlay">
     <div class="spinner"></div>
-    <h2 style="margin: 0; font-size: 22px;">Submitting Inspection...</h2>
-    <p style="margin: 8px 0 0 0; color: #e2e8f0;">Updating Medical Cabinet Inventory. Please wait.</p>
+    <h2 id="overlayTitle" style="margin: 0; font-size: 22px;">Submitting Inspection...</h2>
+    <p id="overlaySub" style="margin: 8px 0 0 0; color: #e2e8f0;">Updating Inventory. Please wait.</p>
   </div>
 
-  <!-- PRIOR INSPECTIONS MODAL -->
+  <!-- Prior Inspections / Inactive Modal -->
   <div id="historyModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>📋 Prior Inspection Logs</h2>
+        <h2 id="modalTitle">📋 Inspection Center</h2>
         <button id="closeModalBtn" class="close-btn">&times;</button>
       </div>
+
+      <div class="modal-nav-tabs">
+        <button id="tabHistoryBtn" class="modal-tab-btn active">📋 Inspection History</button>
+        <button id="tabInactiveBtn" class="modal-tab-btn">📦 Inactive Items</button>
+      </div>
+
       <div class="modal-body" id="modalBody">
         <div class="loading-container">Loading previous submissions...</div>
       </div>
     </div>
   </div>
 
-  <header>
-    <div>
-      <h1>Medical Supply Full Inspection</h1>
-      <p class="subtitle">⚠️ TEST MODE ACTIVE: Submission restrictions are disabled.</p>
+  <!-- Edit Location Modal -->
+  <div id="editLocationModal" class="modal-overlay">
+    <div class="modal-card small">
+      <div class="modal-header">
+        <h2>✏️ Change Item Location</h2>
+        <button id="closeEditModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-top:0; font-size:14px; color:var(--text-muted);">
+          Change cabinet or shelf location for <strong id="editItemTitle" style="color:var(--text-main);">Item Name</strong>.
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px;">
+          <div>
+            <label style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:4px;">CABINET</label>
+            <select id="editCabinetSelect" class="form-select"></select>
+          </div>
+
+          <div>
+            <label style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:4px;">SHELF</label>
+            <select id="editShelfSelect" class="form-select"></select>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+            <button id="cancelEditBtn" class="btn-add-cancel">Cancel</button>
+            <button id="saveEditBtn" class="btn-add-submit" style="flex:none; padding:8px 20px;">Save Location</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <!-- NEW: View Prior Inspections Button -->
+  </div>
+
+  <header>
+    <h1>Medical Supply Full Inspection</h1>
     <button id="viewHistoryBtn" class="btn-history">
-      📋 View Prior Inspections
+      📋 View Prior Inspections / Inactive Items
     </button>
   </header>
 
@@ -636,13 +439,11 @@
       </div>
     </div>
 
-    <!-- Inspector Initials / Name Field -->
     <div class="inspector-box">
       <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Inspector Name / Initials</span>
       <input type="text" id="inspectorName" class="inspector-input" placeholder="e.g. J.D." />
     </div>
     
-    <button id="testAutoFillBtn" class="btn-test">🧪 Test: Mark All Checked</button>
     <button id="submitBtn" class="btn-submit">Submit Entire Inspection</button>
   </div>
 
@@ -650,36 +451,56 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKfFERv-avKOQSirUyKhp-C4GUQEAEq6nHz7GE4hDBcZy5a0_HmxZvho4CuttrM4jZ/exec";
 
     let inventoryData = {};
+    let availableLocations = {}; // { "Cabinet 1": ["Shelf A", "Shelf B"] }
     let activeCabinet = "";
+    let activeModalSubTab = "history"; 
+    let itemBeingEdited = null;
 
     const tabContainer = document.getElementById('tabContainer');
     const cabinetDisplay = document.getElementById('cabinetDisplay');
     const progressText = document.getElementById('progressText');
     const progressFill = document.getElementById('progressFill');
     const submitBtn = document.getElementById('submitBtn');
-    const testAutoFillBtn = document.getElementById('testAutoFillBtn');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlaySub = document.getElementById('overlaySub');
     const inspectorInput = document.getElementById('inspectorName');
 
-    // Modal elements
     const historyModal = document.getElementById('historyModal');
     const viewHistoryBtn = document.getElementById('viewHistoryBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const modalBody = document.getElementById('modalBody');
+    const tabHistoryBtn = document.getElementById('tabHistoryBtn');
+    const tabInactiveBtn = document.getElementById('tabInactiveBtn');
 
-    // Fetch Inventory Data from Google Sheet
+    // EDIT MODAL ELEMENTS
+    const editLocationModal = document.getElementById('editLocationModal');
+    const closeEditModalBtn = document.getElementById('closeEditModalBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    const editItemTitle = document.getElementById('editItemTitle');
+    const editCabinetSelect = document.getElementById('editCabinetSelect');
+    const editShelfSelect = document.getElementById('editShelfSelect');
+
     async function loadDataFromSheet() {
       try {
-        const response = await fetch(GOOGLE_SCRIPT_URL);
-        inventoryData = await response.json();
+        const [invRes, locRes] = await Promise.all([
+          fetch(GOOGLE_SCRIPT_URL),
+          fetch(`${GOOGLE_SCRIPT_URL}?action=locations`)
+        ]);
+
+        inventoryData = await invRes.json();
+        availableLocations = await locRes.json();
         
         const cabinets = Object.keys(inventoryData);
         if (cabinets.length > 0) {
-          activeCabinet = cabinets[0];
+          if (!activeCabinet || !cabinets.includes(activeCabinet)) {
+            activeCabinet = cabinets[0];
+          }
           renderTabs();
           renderContent();
         } else {
-          cabinetDisplay.innerHTML = '<div class="loading-container">No inventory items found in Google Sheet.</div>';
+          cabinetDisplay.innerHTML = '<div class="loading-container">No active inventory items found in Google Sheet.</div>';
         }
       } catch (err) {
         cabinetDisplay.innerHTML = `<div class="loading-container" style="color:red;">Failed to connect to Google Sheets.<br><small>${err.message}</small></div>`;
@@ -695,6 +516,17 @@
           total++;
           if (item.checked) checked++;
         });
+      });
+      return { total, checked };
+    }
+
+    function getTotalStats() {
+      let total = 0;
+      let checked = 0;
+      Object.keys(inventoryData).forEach(cab => {
+        const stats = getCabinetStats(cab);
+        total += stats.total;
+        checked += stats.checked;
       });
       return { total, checked };
     }
@@ -740,26 +572,16 @@
     }
 
     function updateGlobalProgress() {
-      let totalItems = 0;
-      let checkedItems = 0;
-
-      Object.keys(inventoryData).forEach(cab => {
-        const stats = getCabinetStats(cab);
-        totalItems += stats.total;
-        checkedItems += stats.checked;
-      });
-
-      const pct = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
-      progressText.innerText = `${checkedItems} / ${totalItems} Items Checked (${pct}%)`;
+      const stats = getTotalStats();
+      const pct = stats.total > 0 ? Math.round((stats.checked / stats.total) * 100) : 0;
+      progressText.innerText = `${stats.checked} / ${stats.total} Items Checked (${pct}%)`;
       progressFill.style.width = `${pct}%`;
 
-      if (checkedItems === totalItems && totalItems > 0) {
+      if (stats.checked === stats.total && stats.total > 0) {
         progressFill.classList.add('complete');
       } else {
         progressFill.classList.remove('complete');
       }
-      
-      submitBtn.disabled = false;
     }
 
     function renderContent() {
@@ -798,7 +620,11 @@
             <div>
               <div class="item-header">
                 <div class="item-name">${item.name}</div>
-                <span class="check-badge">${item.checked ? '✓ VERIFIED' : 'PENDING'}</span>
+                <div class="header-right">
+                  <span class="check-badge">${item.checked ? '✓ VERIFIED' : 'PENDING'}</span>
+                  <button class="btn-icon btn-edit" title="Edit Location">✏️</button>
+                  <button class="btn-icon btn-delete" title="Delete Item">🗑️</button>
+                </div>
               </div>
               <div class="item-details">
                 <div class="detail-row">
@@ -827,6 +653,47 @@
           const badgeEl = card.querySelector('.status-badge');
           const verifyBtnEl = card.querySelector('.btn-verify');
           const checkBadgeEl = card.querySelector('.check-badge');
+          const deleteBtnEl = card.querySelector('.btn-delete');
+          const editBtnEl = card.querySelector('.btn-edit');
+
+          editBtnEl.addEventListener('click', () => {
+            openEditLocationModal(item, activeCabinet, shelfName);
+          });
+
+          deleteBtnEl.addEventListener('click', async () => {
+            const confirmed = confirm(`Are you sure you want to remove "${item.name}" from the active inventory?\n\nThis will mark its remove it from Medical Supply.`);
+            if (!confirmed) return;
+
+            overlayTitle.innerText = "Deleting Item...";
+            overlaySub.innerText = "This will remove this from inventory...";
+            loadingOverlay.classList.add('active');
+
+            try {
+              const res = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                  action: "deleteItem",
+                  item: {
+                    cabinet: activeCabinet,
+                    shelf: shelfName,
+                    name: item.name
+                  }
+                })
+              });
+
+              const resData = await res.json();
+              if (resData.status === "success") {
+                await loadDataFromSheet();
+              } else {
+                alert("Failed to delete item: " + resData.message);
+              }
+            } catch (err) {
+              alert("Error setting item to inactive: " + err.message);
+            } finally {
+              loadingOverlay.classList.remove('active');
+            }
+          });
 
           inputEl.addEventListener('input', (e) => {
             const newQty = parseInt(e.target.value, 10) || 0;
@@ -855,6 +722,92 @@
           grid.appendChild(card);
         });
 
+        // Add Item Card
+        const addCard = document.createElement('div');
+        addCard.className = 'add-item-card';
+        addCard.innerHTML = `
+          <div class="add-item-btn-text">
+            <span>➕</span> Add Item to ${shelfName}
+          </div>
+        `;
+
+        addCard.addEventListener('click', function showAddForm(e) {
+          if (addCard.querySelector('.add-item-form')) return;
+
+          addCard.innerHTML = `
+            <div class="add-item-form">
+              <strong style="font-size: 14px; color: var(--primary);">Add New Item</strong>
+              <input type="text" class="form-input new-item-name" placeholder="Item Name (e.g., Gauze 4x4)" />
+              <div style="display:flex; gap:8px;">
+                <input type="number" min="0" class="form-input new-item-min" placeholder="Target Min" />
+                <input type="number" min="0" class="form-input new-item-qty" placeholder="Current Stock" />
+              </div>
+              <label style="font-size: 12px; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" class="new-item-exp" /> Has Expiration Date?
+              </label>
+              <div class="add-form-actions">
+                <button class="btn-add-submit">Save Item</button>
+                <button class="btn-add-cancel">Cancel</button>
+              </div>
+            </div>
+          `;
+
+          const saveBtn = addCard.querySelector('.btn-add-submit');
+          const cancelBtn = addCard.querySelector('.btn-add-cancel');
+
+          cancelBtn.addEventListener('click', (evt) => {
+            evt.stopPropagation();
+            renderContent();
+          });
+
+          saveBtn.addEventListener('click', async (evt) => {
+            evt.stopPropagation();
+            const name = addCard.querySelector('.new-item-name').value.trim();
+            const minQty = parseInt(addCard.querySelector('.new-item-min').value, 10) || 0;
+            const currentQty = parseInt(addCard.querySelector('.new-item-qty').value, 10) || 0;
+            const hasExp = addCard.querySelector('.new-item-exp').checked;
+
+            if (!name) {
+              alert('Please enter an item name.');
+              return;
+            }
+
+            overlayTitle.innerText = "Adding New Item...";
+            overlaySub.innerText = "Writing item to Inventory sheet...";
+            loadingOverlay.classList.add('active');
+
+            try {
+              const res = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                  action: "addItem",
+                  item: {
+                    cabinet: activeCabinet,
+                    shelf: shelfName,
+                    name: name,
+                    minQty: minQty,
+                    currentQty: currentQty,
+                    hasExp: hasExp
+                  }
+                })
+              });
+
+              const resData = await res.json();
+              if (resData.status === "success") {
+                await loadDataFromSheet();
+              } else {
+                alert("Failed to add item: " + resData.message);
+              }
+            } catch (err) {
+              alert("Error posting new item: " + err.message);
+            } finally {
+              loadingOverlay.classList.remove('active');
+            }
+          });
+        });
+
+        grid.appendChild(addCard);
         shelfSection.appendChild(grid);
         cabinetDisplay.appendChild(shelfSection);
       });
@@ -862,29 +815,95 @@
       updateGlobalProgress();
     }
 
-    // Clear error style on input
+    // EDIT LOCATION MODAL LOGIC
+    function openEditLocationModal(item, currentCabinet, currentShelf) {
+      itemBeingEdited = { ...item, cabinet: currentCabinet, shelf: currentShelf };
+      editItemTitle.innerText = item.name;
+
+      editCabinetSelect.innerHTML = '';
+      const cabinets = Object.keys(availableLocations);
+      
+      cabinets.forEach(cab => {
+        const opt = document.createElement('option');
+        opt.value = cab;
+        opt.innerText = cab;
+        if (cab === currentCabinet) opt.selected = true;
+        editCabinetSelect.appendChild(opt);
+      });
+
+      updateShelfDropdown(editCabinetSelect.value, currentShelf);
+
+      editCabinetSelect.onchange = () => {
+        updateShelfDropdown(editCabinetSelect.value, null);
+      };
+
+      editLocationModal.classList.add('active');
+    }
+
+    function updateShelfDropdown(selectedCab, defaultShelf) {
+      editShelfSelect.innerHTML = '';
+      const shelves = availableLocations[selectedCab] || [];
+      
+      shelves.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.innerText = s;
+        if (defaultShelf && s === defaultShelf) opt.selected = true;
+        editShelfSelect.appendChild(opt);
+      });
+    }
+
+    closeEditModalBtn.onclick = () => editLocationModal.classList.remove('active');
+    cancelEditBtn.onclick = () => editLocationModal.classList.remove('active');
+
+    saveEditBtn.onclick = async () => {
+      const newCab = editCabinetSelect.value;
+      const newShelf = editShelfSelect.value;
+
+      if (newCab === itemBeingEdited.cabinet && newShelf === itemBeingEdited.shelf) {
+        editLocationModal.classList.remove('active');
+        return;
+      }
+
+      editLocationModal.classList.remove('active');
+      overlayTitle.innerText = "Updating Location...";
+      overlaySub.innerText = `Moving item to ${newCab} > ${newShelf}...`;
+      loadingOverlay.classList.add('active');
+
+      try {
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: "updateLocation",
+            item: itemBeingEdited,
+            newCabinet: newCab,
+            newShelf: newShelf
+          })
+        });
+
+        const resData = await res.json();
+        if (resData.status === "success") {
+          activeCabinet = newCab;
+          await loadDataFromSheet();
+        } else {
+          alert("Failed to update location: " + resData.message);
+        }
+      } catch (err) {
+        alert("Error updating location: " + err.message);
+      } finally {
+        loadingOverlay.classList.remove('active');
+      }
+    };
+
     inspectorInput.addEventListener('input', () => {
       inspectorInput.classList.remove('error');
     });
 
-    // TEST FEATURE: Auto-check all items instantly
-    testAutoFillBtn.addEventListener('click', () => {
-      Object.keys(inventoryData).forEach(cab => {
-        Object.keys(inventoryData[cab]).forEach(shelf => {
-          inventoryData[cab][shelf].forEach(item => {
-            item.checked = true;
-          });
-        });
-      });
-      renderTabs();
-      renderContent();
-    });
-
-    // Submit Complete Inspection to Google Sheets
     submitBtn.addEventListener('click', async () => {
       const inspectorVal = inspectorInput.value.trim();
 
-      // Validate Inspector Name
+      // 1. Require Inspector Name
       if (!inspectorVal) {
         inspectorInput.classList.add('error');
         inspectorInput.focus();
@@ -892,13 +911,21 @@
         return;
       }
 
-      // Attach inspector name to payload wrapper
+      // 2. Require ALL items to be checked
+      const stats = getTotalStats();
+      if (stats.checked < stats.total) {
+        const uncompleted = stats.total - stats.checked;
+        alert(`Cannot submit inspection!\n\nThere are still ${uncompleted} unchecked item(s). Please review all cabinets and confirm every item before submitting.`);
+        return;
+      }
+
       const payload = {
         inspector: inspectorVal,
         inventory: inventoryData
       };
 
-      // Show Grey Overlay & Disable Button
+      overlayTitle.innerText = "Submitting Inspection...";
+      overlaySub.innerText = "Updating Medical Cabinet Inventory. Please wait.";
       loadingOverlay.classList.add('active');
       submitBtn.disabled = true;
 
@@ -911,7 +938,7 @@
 
         const resData = await response.json();
         if (resData.status === "success") {
-          alert("TEST SUCCESS: Inspection successfully logged to 'weekly submissions' sheet!");
+          alert("Inspection successfully submitted and logged!");
           location.reload();
         } else {
           alert("Submission Error: " + resData.message);
@@ -925,12 +952,10 @@
       }
     });
 
-    // ==========================================
-    // PRIOR INSPECTIONS FEATURE (FETCH & DISPLAY)
-    // ==========================================
+    // PRIOR INSPECTION / INACTIVE MODAL HANDLERS
     viewHistoryBtn.addEventListener('click', () => {
       historyModal.classList.add('active');
-      fetchInspectionHistory();
+      switchModalTab("history");
     });
 
     closeModalBtn.addEventListener('click', () => {
@@ -943,6 +968,22 @@
       }
     });
 
+    tabHistoryBtn.addEventListener('click', () => switchModalTab("history"));
+    tabInactiveBtn.addEventListener('click', () => switchModalTab("inactive"));
+
+    function switchModalTab(tabName) {
+      activeModalSubTab = tabName;
+      if (tabName === "history") {
+        tabHistoryBtn.classList.add('active');
+        tabInactiveBtn.classList.remove('active');
+        fetchInspectionHistory();
+      } else {
+        tabInactiveBtn.classList.add('active');
+        tabHistoryBtn.classList.remove('active');
+        fetchInactiveItems();
+      }
+    }
+
     async function fetchInspectionHistory() {
       modalBody.innerHTML = '<div class="loading-container">Loading previous submissions...</div>';
       try {
@@ -954,7 +995,6 @@
           return;
         }
 
-        // Group rows by Timestamp
         const grouped = {};
         data.forEach(row => {
           const key = row.timestamp;
@@ -968,9 +1008,7 @@
           grouped[key].items.push(row);
         });
 
-        // Convert object to array and sort newest first
         const sessions = Object.values(grouped).reverse();
-
         renderHistoryList(sessions);
 
       } catch (err) {
@@ -1038,7 +1076,6 @@
           </div>
         `;
 
-        // Expand/Collapse Details
         const summaryEl = itemEl.querySelector('.history-summary');
         summaryEl.addEventListener('click', () => {
           itemEl.classList.toggle('open');
@@ -1050,7 +1087,99 @@
       modalBody.appendChild(listEl);
     }
 
-    // Start App
+    async function fetchInactiveItems() {
+      modalBody.innerHTML = '<div class="loading-container">Loading inactive items...</div>';
+      try {
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=inactive`);
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          modalBody.innerHTML = '<div class="loading-container">No inactive items found in Google Sheet.</div>';
+          return;
+        }
+
+        renderInactiveList(data);
+
+      } catch (err) {
+        modalBody.innerHTML = `<div class="loading-container" style="color:red;">Failed to load inactive items.<br><small>${err.message}</small></div>`;
+      }
+    }
+
+    function renderInactiveList(items) {
+      modalBody.innerHTML = '';
+      
+      const table = document.createElement('table');
+      table.className = 'history-table';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Cabinet</th>
+            <th>Shelf</th>
+            <th>Item Name</th>
+            <th>Target Min</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((item, index) => `
+            <tr>
+              <td><strong>${item.cabinet}</strong></td>
+              <td>${item.shelf}</td>
+              <td>${item.name}</td>
+              <td>${item.minQty}</td>
+              <td>
+                <button class="btn-reactivate" data-index="${index}">➕ Reactivate</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+
+      const reactivateButtons = table.querySelectorAll('.btn-reactivate');
+      reactivateButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const idx = e.target.getAttribute('data-index');
+          const targetItem = items[idx];
+
+          const confirmReactivate = confirm(`Are you sure you want to reactivate "${targetItem.name}"?\n\nIt will be restored to ${targetItem.cabinet} > ${targetItem.shelf}.`);
+          if (!confirmReactivate) return;
+
+          overlayTitle.innerText = "Reactivating Item...";
+          overlaySub.innerText = "Reactivating Item in Medical Supplies...";
+          loadingOverlay.classList.add('active');
+
+          try {
+            const res = await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                action: "reactivateItem",
+                item: {
+                  cabinet: targetItem.cabinet,
+                  shelf: targetItem.shelf,
+                  name: targetItem.name
+                }
+              })
+            });
+
+            const resData = await res.json();
+            if (resData.status === "success") {
+              await loadDataFromSheet();
+              await fetchInactiveItems();
+            } else {
+              alert("Failed to reactivate item: " + resData.message);
+            }
+          } catch (err) {
+            alert("Error reactivating item: " + err.message);
+          } finally {
+            loadingOverlay.classList.remove('active');
+          }
+        });
+      });
+
+      modalBody.appendChild(table);
+    }
+
     loadDataFromSheet();
   </script>
 </body>
