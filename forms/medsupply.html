@@ -32,6 +32,11 @@
 
     header {
       margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
     h1 {
@@ -43,6 +48,28 @@
       color: #e67e22;
       font-weight: bold;
       margin: 0;
+    }
+
+    .btn-history {
+      background-color: #ffffff;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    .btn-history:hover {
+      background-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.25);
     }
 
     .loading-container {
@@ -419,6 +446,145 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* PRIOR INSPECTIONS MODAL STYLES */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(44, 62, 80, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 9000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--text-main);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0 8px;
+    }
+
+    .close-btn:hover {
+      color: var(--danger-text);
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .history-summary {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background-color: #ffffff;
+      user-select: none;
+    }
+
+    .history-summary:hover {
+      background-color: #f8fafc;
+    }
+
+    .history-date {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+
+    .history-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .history-details {
+      display: none;
+      padding: 16px;
+      background-color: #fafbfc;
+      border-top: 1px solid var(--border);
+    }
+
+    .history-item.open .history-details {
+      display: block;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .history-table th, .history-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-table th {
+      background-color: #edf2f7;
+      color: var(--text-main);
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -430,9 +596,28 @@
     <p style="margin: 8px 0 0 0; color: #e2e8f0;">Updating Google Sheets live database. Please wait.</p>
   </div>
 
+  <!-- PRIOR INSPECTIONS MODAL -->
+  <div id="historyModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>📋 Prior Inspection Logs</h2>
+        <button id="closeModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div class="loading-container">Loading previous submissions...</div>
+      </div>
+    </div>
+  </div>
+
   <header>
-    <h1>Medical Supply Full Inspection</h1>
-    <p class="subtitle">⚠️ TEST MODE ACTIVE: Submission restrictions are disabled.</p>
+    <div>
+      <h1>Medical Supply Full Inspection</h1>
+      <p class="subtitle">⚠️ TEST MODE ACTIVE: Submission restrictions are disabled.</p>
+    </div>
+    <!-- NEW: View Prior Inspections Button -->
+    <button id="viewHistoryBtn" class="btn-history">
+      📋 View Prior Inspections
+    </button>
   </header>
 
   <div class="tabs" id="tabContainer"></div>
@@ -475,6 +660,12 @@
     const testAutoFillBtn = document.getElementById('testAutoFillBtn');
     const loadingOverlay = document.getElementById('loadingOverlay');
     const inspectorInput = document.getElementById('inspectorName');
+
+    // Modal elements
+    const historyModal = document.getElementById('historyModal');
+    const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalBody = document.getElementById('modalBody');
 
     // Fetch Inventory Data from Google Sheet
     async function loadDataFromSheet() {
@@ -733,6 +924,131 @@
         submitBtn.disabled = false;
       }
     });
+
+    // ==========================================
+    // PRIOR INSPECTIONS FEATURE (FETCH & DISPLAY)
+    // ==========================================
+    viewHistoryBtn.addEventListener('click', () => {
+      historyModal.classList.add('active');
+      fetchInspectionHistory();
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      historyModal.classList.remove('active');
+    });
+
+    historyModal.addEventListener('click', (e) => {
+      if (e.target === historyModal) {
+        historyModal.classList.remove('active');
+      }
+    });
+
+    async function fetchInspectionHistory() {
+      modalBody.innerHTML = '<div class="loading-container">Loading previous submissions...</div>';
+      try {
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=history`);
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          modalBody.innerHTML = '<div class="loading-container">No prior inspections recorded yet.</div>';
+          return;
+        }
+
+        // Group rows by Timestamp
+        const grouped = {};
+        data.forEach(row => {
+          const key = row.timestamp;
+          if (!grouped[key]) {
+            grouped[key] = {
+              timestamp: row.timestamp,
+              inspector: row.inspector,
+              items: []
+            };
+          }
+          grouped[key].items.push(row);
+        });
+
+        // Convert object to array and sort newest first
+        const sessions = Object.values(grouped).reverse();
+
+        renderHistoryList(sessions);
+
+      } catch (err) {
+        modalBody.innerHTML = `<div class="loading-container" style="color:red;">Failed to load inspection history.<br><small>${err.message}</small></div>`;
+      }
+    }
+
+    function renderHistoryList(sessions) {
+      modalBody.innerHTML = '';
+      const listEl = document.createElement('div');
+      listEl.className = 'history-list';
+
+      sessions.forEach(session => {
+        let issuesCount = 0;
+        session.items.forEach(i => {
+          if (i.status === 'LOW STOCK' || i.status === 'OUT OF STOCK') issuesCount++;
+        });
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'history-item';
+
+        const statusPill = issuesCount > 0 
+          ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-weight:bold; font-size:12px; padding:2px 8px; border-radius:12px;">⚠️ ${issuesCount} Items Needed Attention</span>`
+          : `<span style="background:var(--success-bg); color:var(--success-text); font-weight:bold; font-size:12px; padding:2px 8px; border-radius:12px;">✓ Fully Stocked</span>`;
+
+        itemEl.innerHTML = `
+          <div class="history-summary">
+            <div>
+              <div class="history-date">📅 ${session.timestamp}</div>
+              <div class="history-meta"><strong>Inspector:</strong> ${session.inspector} | <strong>Total Items Audited:</strong> ${session.items.length}</div>
+            </div>
+            <div>${statusPill}</div>
+          </div>
+          <div class="history-details">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Cabinet</th>
+                  <th>Shelf</th>
+                  <th>Item Name</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Exp Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${session.items.map(i => {
+                  let statusColor = '#27ae60';
+                  if (i.status === 'LOW STOCK') statusColor = '#f39c12';
+                  if (i.status === 'OUT OF STOCK') statusColor = '#e74c3c';
+
+                  return `
+                    <tr>
+                      <td><strong>${i.cabinet}</strong></td>
+                      <td>${i.shelf}</td>
+                      <td>${i.itemName}</td>
+                      <td>${i.countedQty} / ${i.minQty}</td>
+                      <td style="color:${statusColor}; font-weight:bold;">${i.status}</td>
+                      <td>${i.expDate}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        // Expand/Collapse Details
+        const summaryEl = itemEl.querySelector('.history-summary');
+        summaryEl.addEventListener('click', () => {
+          itemEl.classList.toggle('open');
+        });
+
+        listEl.appendChild(itemEl);
+      });
+
+      modalBody.appendChild(listEl);
+    }
 
     // Start App
     loadDataFromSheet();
