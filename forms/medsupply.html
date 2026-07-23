@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Supply Inspection Dashboard</title>
+  <style>
+    :root {
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --text-main: #2c3e50;
+      --text-muted: #7f8c8d;
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --success-bg: #e8f8f5;
+      --success-text: #27ae60;
+      --danger-bg: #fadbd8;
+      --danger-text: #e74c3c;
+      --warning-bg: #fcf3cf;
+      --warning-text: #f39c12;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 24px;
+      padding-bottom: 90px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 18px;
+      color: var(--text-muted);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      background-color: #eaeded;
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background-color: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-status {
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background-color: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    .tab-btn.active .tab-status {
+      background-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .tab-btn.complete-tab .tab-status {
+      background-color: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .shelf-section {
+      margin-bottom: 32px;
+    }
+
+    .shelf-title {
+      font-size: 20px;
+      margin-bottom: 16px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      color: #34495e;
+    }
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .item-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 16px;
+      border: 2px solid var(--border);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .item-card.verified {
+      border-color: #a8e6cf !important;
+      box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);
+    }
+
+    .item-card.out-of-stock {
+      border-left: 6px solid var(--danger-text);
+      background-color: #fffaf9;
+    }
+
+    .item-card.low-stock {
+      border-left: 6px solid var(--warning-text);
+      background-color: #fffef9;
+    }
+
+    .item-card.in-stock {
+      border-left: 6px solid var(--success-text);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .item-name {
+      font-weight: 600;
+      font-size: 16px;
+      padding-right: 8px;
+    }
+
+    .check-badge {
+      font-size: 11px;
+      font-weight: bold;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #eee;
+      color: #777;
+      white-space: nowrap;
+    }
+
+    .verified .check-badge {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .item-details {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .label {
+      color: var(--text-muted);
+    }
+
+    .val {
+      font-weight: 600;
+    }
+
+    .stock-input {
+      width: 75px;
+      padding: 4px 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: right;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-main);
+      background-color: #fff;
+    }
+
+    .stock-input:focus, .exp-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+
+    .status-badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-ok { background: var(--success-bg); color: var(--success-text); }
+    .badge-low { background: var(--warning-bg); color: var(--warning-text); }
+    .badge-empty { background: var(--danger-bg); color: var(--danger-text); }
+
+    .exp-date-box {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #555;
+    }
+
+    .exp-input {
+      padding: 3px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background-color: #fff;
+      color: var(--text-main);
+    }
+
+    .action-row {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-verify {
+      background-color: #f8f9fa;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-verify:hover {
+      background-color: #e2e8f0;
+    }
+
+    .verified .btn-verify {
+      background-color: var(--success-bg);
+      border-color: var(--success-text);
+      color: var(--success-text);
+    }
+
+    .inspection-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #ffffff;
+      border-top: 2px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+      z-index: 1000;
+    }
+
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-grow: 1;
+      max-width: 600px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 14px;
+      background-color: #e2e8f0;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--primary);
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    .progress-bar-fill.complete {
+      background-color: var(--success-text);
+    }
+
+    .btn-submit {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-submit:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-submit:not(:disabled):hover {
+      background-color: var(--primary-dark);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Medical Supply Full Inspection</h1>
+    <p class="subtitle">Connected to Google Sheets live database.</p>
+  </header>
+
+  <div class="tabs" id="tabContainer"></div>
+  <main id="cabinetDisplay">
+    <div class="loading-container">Loading supply items from Google Sheets...</div>
+  </main>
+
+  <div class="inspection-bar">
+    <div class="progress-container">
+      <div style="display: flex; flex-direction: column;">
+        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Total Progress</span>
+        <span id="progressText" style="font-weight: 700; font-size: 15px; min-width: 160px;">0 / 0 Items Checked</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+    </div>
+    <button id="submitBtn" class="btn-submit" disabled>Submit Entire Inspection</button>
+  </div>
+
+  <script>
+    // REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKfFERv-avKOQSirUyKhp-C4GUQEAEq6nHz7GE4hDBcZy5a0_HmxZvho4CuttrM4jZ/exec";
+
+    let inventoryData = {};
+    let activeCabinet = "";
+
+    const tabContainer = document.getElementById('tabContainer');
+    const cabinetDisplay = document.getElementById('cabinetDisplay');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Fetch Inventory Data from Google Sheet
+    async function loadDataFromSheet() {
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_URL);
+        inventoryData = await response.json();
+        
+        const cabinets = Object.keys(inventoryData);
+        if (cabinets.length > 0) {
+          activeCabinet = cabinets[0];
+          renderTabs();
+          renderContent();
+        } else {
+          cabinetDisplay.innerHTML = '<div class="loading-container">No inventory items found in Google Sheet.</div>';
+        }
+      } catch (err) {
+        cabinetDisplay.innerHTML = `<div class="loading-container" style="color:red;">Failed to connect to Google Sheets.<br><small>${err.message}</small></div>`;
+      }
+    }
+
+    function getCabinetStats(cabName) {
+      let total = 0;
+      let checked = 0;
+      const shelves = inventoryData[cabName] || {};
+      Object.keys(shelves).forEach(s => {
+        shelves[s].forEach(item => {
+          total++;
+          if (item.checked) checked++;
+        });
+      });
+      return { total, checked };
+    }
+
+    function renderTabs() {
+      tabContainer.innerHTML = '';
+      Object.keys(inventoryData).forEach(cab => {
+        const stats = getCabinetStats(cab);
+        const isComplete = stats.checked === stats.total && stats.total > 0;
+
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${cab === activeCabinet ? 'active' : ''} ${isComplete ? 'complete-tab' : ''}`;
+        
+        btn.innerHTML = `
+          <span>${cab}</span>
+          <span class="tab-status">${stats.checked}/${stats.total} ${isComplete ? '✓' : ''}</span>
+        `;
+
+        btn.onclick = () => {
+          activeCabinet = cab;
+          renderTabs();
+          renderContent();
+        };
+        tabContainer.appendChild(btn);
+      });
+    }
+
+    function getStockStatusClass(current, min) {
+      const minVal = parseInt(min, 10) || 0;
+      if (current === 0) return { cardClass: 'out-of-stock', badgeClass: 'badge-empty', text: 'OUT OF STOCK' };
+      if (current < minVal) return { cardClass: 'low-stock', badgeClass: 'badge-low', text: 'LOW STOCK' };
+      return { cardClass: 'in-stock', badgeClass: 'badge-ok', text: 'IN STOCK' };
+    }
+
+    function markVerified(item, cardEl, verifyBtnEl, checkBadgeEl) {
+      item.checked = true;
+      cardEl.classList.add('verified');
+      checkBadgeEl.innerText = '✓ VERIFIED';
+      verifyBtnEl.innerText = '✓ Checked';
+
+      renderTabs();
+      updateGlobalProgress();
+    }
+
+    function updateGlobalProgress() {
+      let totalItems = 0;
+      let checkedItems = 0;
+
+      Object.keys(inventoryData).forEach(cab => {
+        const stats = getCabinetStats(cab);
+        totalItems += stats.total;
+        checkedItems += stats.checked;
+      });
+
+      const pct = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
+      progressText.innerText = `${checkedItems} / ${totalItems} Items Checked (${pct}%)`;
+      progressFill.style.width = `${pct}%`;
+
+      if (checkedItems === totalItems && totalItems > 0) {
+        progressFill.classList.add('complete');
+        submitBtn.disabled = false;
+      } else {
+        progressFill.classList.remove('complete');
+        submitBtn.disabled = true;
+      }
+    }
+
+    function renderContent() {
+      cabinetDisplay.innerHTML = '';
+      const shelves = inventoryData[activeCabinet] || {};
+
+      Object.keys(shelves).forEach(shelfName => {
+        const shelfSection = document.createElement('div');
+        shelfSection.className = 'shelf-section';
+
+        const title = document.createElement('h2');
+        title.className = 'shelf-title';
+        title.innerText = shelfName;
+        shelfSection.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'item-grid';
+
+        shelves[shelfName].forEach(item => {
+          const card = document.createElement('div');
+          const status = getStockStatusClass(item.currentQty, item.minQty);
+          
+          card.className = `item-card ${status.cardClass} ${item.checked ? 'verified' : ''}`;
+
+          let expHtml = '';
+          if (item.hasExp) {
+            expHtml = `
+              <div class="exp-date-box">
+                <span class="label">Exp. Date:</span>
+                <input type="date" class="exp-input" value="${item.expDate || ''}" />
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div>
+              <div class="item-header">
+                <div class="item-name">${item.name}</div>
+                <span class="check-badge">${item.checked ? '✓ VERIFIED' : 'PENDING'}</span>
+              </div>
+              <div class="item-details">
+                <div class="detail-row">
+                  <span class="label">Target Min:</span>
+                  <span class="val">${item.minQty}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Current Stock:</span>
+                  <input type="number" min="0" class="stock-input" value="${item.currentQty}" />
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="detail-row" style="margin-top: 12px;">
+                <span class="label">Status:</span>
+                <span class="status-badge ${status.badgeClass}">${status.text}</span>
+              </div>
+              ${expHtml}
+              <div class="action-row">
+                <button class="btn-verify">${item.checked ? '✓ Checked' : '✓ Confirm / Mark Checked'}</button>
+              </div>
+            </div>
+          `;
+
+          const inputEl = card.querySelector('.stock-input');
+          const badgeEl = card.querySelector('.status-badge');
+          const verifyBtnEl = card.querySelector('.btn-verify');
+          const checkBadgeEl = card.querySelector('.check-badge');
+
+          inputEl.addEventListener('input', (e) => {
+            const newQty = parseInt(e.target.value, 10) || 0;
+            item.currentQty = newQty;
+
+            const updatedStatus = getStockStatusClass(newQty, item.minQty);
+            card.className = `item-card ${updatedStatus.cardClass} ${item.checked ? 'verified' : ''}`;
+            badgeEl.className = `status-badge ${updatedStatus.badgeClass}`;
+            badgeEl.innerText = updatedStatus.text;
+
+            markVerified(item, card, verifyBtnEl, checkBadgeEl);
+          });
+
+          if (item.hasExp) {
+            const expInputEl = card.querySelector('.exp-input');
+            expInputEl.addEventListener('change', (e) => {
+              item.expDate = e.target.value;
+              markVerified(item, card, verifyBtnEl, checkBadgeEl);
+            });
+          }
+
+          verifyBtnEl.addEventListener('click', () => {
+            markVerified(item, card, verifyBtnEl, checkBadgeEl);
+          });
+
+          grid.appendChild(card);
+        });
+
+        shelfSection.appendChild(grid);
+        cabinetDisplay.appendChild(shelfSection);
+      });
+
+      updateGlobalProgress();
+    }
+
+    // Submit Complete Inspection to Google Sheets
+    submitBtn.addEventListener('click', async () => {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Posting Submission...";
+
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(inventoryData)
+        });
+
+        const resData = await response.json();
+        if (resData.status === "success") {
+          alert("Inspection successfully logged to 'weekly submissions' sheet!");
+          location.reload(); // Refresh to reset state
+        } else {
+          alert("Submission Error: " + resData.message);
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Submit Entire Inspection";
+        }
+      } catch (err) {
+        alert("Failed to connect to Google Sheets submission endpoint: " + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Submit Entire Inspection";
+      }
+    });
+
+    // Start App
+    loadDataFromSheet();
+  </script>
+</body>
+</html>
