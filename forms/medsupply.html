@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medical Supply Inspection Dashboard</title>
+  <title>Medical Supply Inspection Dashboard (TEST MODE)</title>
   <style>
     :root {
       --bg-color: #f4f7f6;
@@ -40,7 +40,8 @@
     }
 
     .subtitle {
-      color: var(--text-muted);
+      color: #e67e22;
+      font-weight: bold;
       margin: 0;
     }
 
@@ -296,6 +297,7 @@
       justify-content: space-between;
       box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
       z-index: 1000;
+      gap: 16px;
     }
 
     .progress-container {
@@ -303,7 +305,7 @@
       align-items: center;
       gap: 16px;
       flex-grow: 1;
-      max-width: 600px;
+      max-width: 500px;
     }
 
     .progress-bar-bg {
@@ -337,15 +339,25 @@
       transition: all 0.2s ease;
     }
 
-    .btn-submit:disabled {
-      background-color: #bdc3c7;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .btn-submit:not(:disabled):hover {
+    .btn-submit:hover {
       background-color: var(--primary-dark);
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-test {
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-test:hover {
+      background-color: #d35400;
     }
   </style>
 </head>
@@ -353,7 +365,7 @@
 
   <header>
     <h1>Medical Supply Full Inspection</h1>
-    <p class="subtitle">Connected to Google Sheets live database.</p>
+    <p class="subtitle">⚠️ TEST MODE ACTIVE: Submission restrictions are disabled.</p>
   </header>
 
   <div class="tabs" id="tabContainer"></div>
@@ -371,11 +383,12 @@
         <div class="progress-bar-fill" id="progressFill"></div>
       </div>
     </div>
-    <button id="submitBtn" class="btn-submit" disabled>Submit Entire Inspection</button>
+    
+    <button id="testAutoFillBtn" class="btn-test">🧪 Test: Mark All Checked</button>
+    <button id="submitBtn" class="btn-submit">Submit Entire Inspection</button>
   </div>
 
   <script>
-    // REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKfFERv-avKOQSirUyKhp-C4GUQEAEq6nHz7GE4hDBcZy5a0_HmxZvho4CuttrM4jZ/exec";
 
     let inventoryData = {};
@@ -386,6 +399,7 @@
     const progressText = document.getElementById('progressText');
     const progressFill = document.getElementById('progressFill');
     const submitBtn = document.getElementById('submitBtn');
+    const testAutoFillBtn = document.getElementById('testAutoFillBtn');
 
     // Fetch Inventory Data from Google Sheet
     async function loadDataFromSheet() {
@@ -451,9 +465,9 @@
 
     function markVerified(item, cardEl, verifyBtnEl, checkBadgeEl) {
       item.checked = true;
-      cardEl.classList.add('verified');
-      checkBadgeEl.innerText = '✓ VERIFIED';
-      verifyBtnEl.innerText = '✓ Checked';
+      if (cardEl) cardEl.classList.add('verified');
+      if (checkBadgeEl) checkBadgeEl.innerText = '✓ VERIFIED';
+      if (verifyBtnEl) verifyBtnEl.innerText = '✓ Checked';
 
       renderTabs();
       updateGlobalProgress();
@@ -475,11 +489,12 @@
 
       if (checkedItems === totalItems && totalItems > 0) {
         progressFill.classList.add('complete');
-        submitBtn.disabled = false;
       } else {
         progressFill.classList.remove('complete');
-        submitBtn.disabled = true;
       }
+      
+      // TEST MODE: Submit button is ALWAYS enabled regardless of completion
+      submitBtn.disabled = false;
     }
 
     function renderContent() {
@@ -582,6 +597,19 @@
       updateGlobalProgress();
     }
 
+    // TEST FEATURE: Auto-check all items instantly
+    testAutoFillBtn.addEventListener('click', () => {
+      Object.keys(inventoryData).forEach(cab => {
+        Object.keys(inventoryData[cab]).forEach(shelf => {
+          inventoryData[cab][shelf].forEach(item => {
+            item.checked = true;
+          });
+        });
+      });
+      renderTabs();
+      renderContent();
+    });
+
     // Submit Complete Inspection to Google Sheets
     submitBtn.addEventListener('click', async () => {
       submitBtn.disabled = true;
@@ -596,8 +624,8 @@
 
         const resData = await response.json();
         if (resData.status === "success") {
-          alert("Inspection successfully logged to 'weekly submissions' sheet!");
-          location.reload(); // Refresh to reset state
+          alert("TEST SUCCESS: Inspection successfully logged to 'weekly submissions' sheet!");
+          location.reload();
         } else {
           alert("Submission Error: " + resData.message);
           submitBtn.disabled = false;
