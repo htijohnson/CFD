@@ -451,7 +451,7 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKfFERv-avKOQSirUyKhp-C4GUQEAEq6nHz7GE4hDBcZy5a0_HmxZvho4CuttrM4jZ/exec";
 
     let inventoryData = {};
-    let availableLocations = {}; // { "Cabinet 1": ["Shelf A", "Shelf B"] }
+    let availableLocations = {}; 
     let activeCabinet = "";
     let activeModalSubTab = "history"; 
     let itemBeingEdited = null;
@@ -821,9 +821,7 @@
       editItemTitle.innerText = item.name;
 
       editCabinetSelect.innerHTML = '';
-      const cabinets = Object.keys(availableLocations);
-      
-      cabinets.forEach(cab => {
+      Object.keys(availableLocations).forEach(cab => {
         const opt = document.createElement('option');
         opt.value = cab;
         opt.innerText = cab;
@@ -831,24 +829,23 @@
         editCabinetSelect.appendChild(opt);
       });
 
-      updateShelfDropdown(editCabinetSelect.value, currentShelf);
+      populateEditShelves(editCabinetSelect.value, currentShelf);
 
       editCabinetSelect.onchange = () => {
-        updateShelfDropdown(editCabinetSelect.value, null);
+        populateEditShelves(editCabinetSelect.value);
       };
 
       editLocationModal.classList.add('active');
     }
 
-    function updateShelfDropdown(selectedCab, defaultShelf) {
+    function populateEditShelves(cabName, selectedShelf = null) {
       editShelfSelect.innerHTML = '';
-      const shelves = availableLocations[selectedCab] || [];
-      
-      shelves.forEach(s => {
+      const shelves = availableLocations[cabName] || [];
+      shelves.forEach(shelf => {
         const opt = document.createElement('option');
-        opt.value = s;
-        opt.innerText = s;
-        if (defaultShelf && s === defaultShelf) opt.selected = true;
+        opt.value = shelf;
+        opt.innerText = shelf;
+        if (selectedShelf && shelf === selectedShelf) opt.selected = true;
         editShelfSelect.appendChild(opt);
       });
     }
@@ -857,17 +854,18 @@
     cancelEditBtn.onclick = () => editLocationModal.classList.remove('active');
 
     saveEditBtn.onclick = async () => {
-      const newCab = editCabinetSelect.value;
+      if (!itemBeingEdited) return;
+
+      const newCabinet = editCabinetSelect.value;
       const newShelf = editShelfSelect.value;
 
-      if (newCab === itemBeingEdited.cabinet && newShelf === itemBeingEdited.shelf) {
+      if (newCabinet === itemBeingEdited.cabinet && newShelf === itemBeingEdited.shelf) {
         editLocationModal.classList.remove('active');
         return;
       }
 
-      editLocationModal.classList.remove('active');
-      overlayTitle.innerText = "Updating Location...";
-      overlaySub.innerText = `Moving item to ${newCab} > ${newShelf}...`;
+      overlayTitle.innerText = "Moving Item...";
+      overlaySub.innerText = "Updating cabinet & shelf location...";
       loadingOverlay.classList.add('active');
 
       try {
@@ -875,277 +873,188 @@
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: "updateLocation",
-            item: itemBeingEdited,
-            newCabinet: newCab,
-            newShelf: newShelf
+            action: "moveItem",
+            item: {
+              oldCabinet: itemBeingEdited.cabinet,
+              oldShelf: itemBeingEdited.shelf,
+              newCabinet: newCabinet,
+              newShelf: newShelf,
+              name: itemBeingEdited.name
+            }
           })
         });
 
         const resData = await res.json();
         if (resData.status === "success") {
-          activeCabinet = newCab;
+          editLocationModal.classList.remove('active');
           await loadDataFromSheet();
         } else {
-          alert("Failed to update location: " + resData.message);
+          alert("Failed to move item: " + resData.message);
         }
       } catch (err) {
-        alert("Error updating location: " + err.message);
+        alert("Error sending request: " + err.message);
       } finally {
         loadingOverlay.classList.remove('active');
       }
     };
 
-    inspectorInput.addEventListener('input', () => {
-      inspectorInput.classList.remove('error');
-    });
-
-    submitBtn.addEventListener('click', async () => {
-      const inspectorVal = inspectorInput.value.trim();
-
-      // 1. Require Inspector Name
-      if (!inspectorVal) {
-        inspectorInput.classList.add('error');
-        inspectorInput.focus();
-        alert("Please enter the Inspector's Name or Initials before submitting.");
-        return;
-      }
-
-      // 2. Require ALL items to be checked
-      const stats = getTotalStats();
-      if (stats.checked < stats.total) {
-        const uncompleted = stats.total - stats.checked;
-        alert(`Cannot submit inspection!\n\nThere are still ${uncompleted} unchecked item(s). Please review all cabinets and confirm every item before submitting.`);
-        return;
-      }
-
-      const payload = {
-        inspector: inspectorVal,
-        inventory: inventoryData
-      };
-
-      overlayTitle.innerText = "Submitting Inspection...";
-      overlaySub.innerText = "Updating Medical Cabinet Inventory. Please wait.";
-      loadingOverlay.classList.add('active');
-      submitBtn.disabled = true;
-
-      try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-
-        const resData = await response.json();
-        if (resData.status === "success") {
-          alert("Inspection successfully submitted and logged!");
-          location.reload();
-        } else {
-          alert("Submission Error: " + resData.message);
-          loadingOverlay.classList.remove('active');
-          submitBtn.disabled = false;
-        }
-      } catch (err) {
-        alert("Failed to connect to Google Sheets submission endpoint: " + err.message);
-        loadingOverlay.classList.remove('active');
-        submitBtn.disabled = false;
-      }
-    });
-
-    // PRIOR INSPECTION / INACTIVE MODAL HANDLERS
-    viewHistoryBtn.addEventListener('click', () => {
+    // HISTORY AND INACTIVE LOGIC
+    viewHistoryBtn.onclick = () => {
       historyModal.classList.add('active');
-      switchModalTab("history");
-    });
+      loadModalContent();
+    };
 
-    closeModalBtn.addEventListener('click', () => {
-      historyModal.classList.remove('active');
-    });
+    closeModalBtn.onclick = () => historyModal.classList.remove('active');
 
-    historyModal.addEventListener('click', (e) => {
-      if (e.target === historyModal) {
-        historyModal.classList.remove('active');
-      }
-    });
+    tabHistoryBtn.onclick = () => {
+      activeModalSubTab = "history";
+      tabHistoryBtn.classList.add('active');
+      tabInactiveBtn.classList.remove('active');
+      loadModalContent();
+    };
 
-    tabHistoryBtn.addEventListener('click', () => switchModalTab("history"));
-    tabInactiveBtn.addEventListener('click', () => switchModalTab("inactive"));
+    tabInactiveBtn.onclick = () => {
+      activeModalSubTab = "inactive";
+      tabInactiveBtn.classList.add('active');
+      tabHistoryBtn.classList.remove('active');
+      loadModalContent();
+    };
 
-    function switchModalTab(tabName) {
-      activeModalSubTab = tabName;
-      if (tabName === "history") {
-        tabHistoryBtn.classList.add('active');
-        tabInactiveBtn.classList.remove('active');
-        fetchInspectionHistory();
-      } else {
-        tabInactiveBtn.classList.add('active');
-        tabHistoryBtn.classList.remove('active');
-        fetchInactiveItems();
+    async function loadModalContent() {
+      modalBody.innerHTML = '<div class="loading-container">Loading...</div>';
+
+      try {
+        if (activeModalSubTab === "history") {
+          const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=history`);
+          const historyData = await res.json();
+          renderHistory(historyData);
+        } else {
+          const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=inactive`);
+          const inactiveData = await res.json();
+          renderInactive(inactiveData);
+        }
+      } catch (err) {
+        modalBody.innerHTML = `<div class="loading-container" style="color:red;">Error fetching details: ${err.message}</div>`;
       }
     }
 
-    async function fetchInspectionHistory() {
-      modalBody.innerHTML = '<div class="loading-container">Loading previous submissions...</div>';
-      try {
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=history`);
-        const data = await res.json();
+    function renderHistory(data) {
+      if (!data || data.length === 0) {
+        modalBody.innerHTML = '<div class="loading-container">No prior inspection records found.</div>';
+        return;
+      }
 
-        if (!Array.isArray(data) || data.length === 0) {
-          modalBody.innerHTML = '<div class="loading-container">No prior inspections recorded yet.</div>';
-          return;
+      // Slice to restrict view to only the 5 most recent submissions
+      const recentData = data.slice(0, 5);
+
+      const list = document.createElement('div');
+      list.className = 'history-list';
+
+      recentData.forEach((record, index) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        let rowsHtml = '';
+        if (record.items && record.items.length > 0) {
+          record.items.forEach(i => {
+            rowsHtml += `
+              <tr>
+                <td><strong>${i.name}</strong></td>
+                <td>${i.cabinet || ''} / ${i.shelf || ''}</td>
+                <td>${i.qty}</td>
+                <td>${i.min}</td>
+                <td>${i.exp || 'N/A'}</td>
+              </tr>
+            `;
+          });
         }
 
-        const grouped = {};
-        data.forEach(row => {
-          const key = row.timestamp;
-          if (!grouped[key]) {
-            grouped[key] = {
-              timestamp: row.timestamp,
-              inspector: row.inspector,
-              items: []
-            };
-          }
-          grouped[key].items.push(row);
-        });
-
-        const sessions = Object.values(grouped).reverse();
-        renderHistoryList(sessions);
-
-      } catch (err) {
-        modalBody.innerHTML = `<div class="loading-container" style="color:red;">Failed to load inspection history.<br><small>${err.message}</small></div>`;
-      }
-    }
-
-    function renderHistoryList(sessions) {
-      modalBody.innerHTML = '';
-      const listEl = document.createElement('div');
-      listEl.className = 'history-list';
-
-      sessions.forEach(session => {
-        let issuesCount = 0;
-        session.items.forEach(i => {
-          if (i.status === 'LOW STOCK' || i.status === 'OUT OF STOCK') issuesCount++;
-        });
-
-        const itemEl = document.createElement('div');
-        itemEl.className = 'history-item';
-
-        const statusPill = issuesCount > 0 
-          ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-weight:bold; font-size:12px; padding:2px 8px; border-radius:12px;">⚠️ ${issuesCount} Items Needed Attention</span>`
-          : `<span style="background:var(--success-bg); color:var(--success-text); font-weight:bold; font-size:12px; padding:2px 8px; border-radius:12px;">✓ Fully Stocked</span>`;
-
-        itemEl.innerHTML = `
+        item.innerHTML = `
           <div class="history-summary">
             <div>
-              <div class="history-date">📅 ${session.timestamp}</div>
-              <div class="history-meta"><strong>Inspector:</strong> ${session.inspector} | <strong>Total Items Audited:</strong> ${session.items.length}</div>
+              <div class="history-date">📅 ${record.date || 'Unknown Date'}</div>
+              <div class="history-meta">Inspector: <strong>${record.inspector || 'Anonymous'}</strong></div>
             </div>
-            <div>${statusPill}</div>
+            <span style="font-size: 13px; color: var(--primary); font-weight: bold;">View Details ▼</span>
           </div>
           <div class="history-details">
             <table class="history-table">
               <thead>
                 <tr>
-                  <th>Cabinet</th>
-                  <th>Shelf</th>
                   <th>Item Name</th>
-                  <th>Stock</th>
-                  <th>Status</th>
+                  <th>Location</th>
+                  <th>Recorded Qty</th>
+                  <th>Target Min</th>
                   <th>Exp Date</th>
                 </tr>
               </thead>
               <tbody>
-                ${session.items.map(i => {
-                  let statusColor = '#27ae60';
-                  if (i.status === 'LOW STOCK') statusColor = '#f39c12';
-                  if (i.status === 'OUT OF STOCK') statusColor = '#e74c3c';
-
-                  return `
-                    <tr>
-                      <td><strong>${i.cabinet}</strong></td>
-                      <td>${i.shelf}</td>
-                      <td>${i.itemName}</td>
-                      <td>${i.countedQty} / ${i.minQty}</td>
-                      <td style="color:${statusColor}; font-weight:bold;">${i.status}</td>
-                      <td>${i.expDate}</td>
-                    </tr>
-                  `;
-                }).join('')}
+                ${rowsHtml}
               </tbody>
             </table>
           </div>
         `;
 
-        const summaryEl = itemEl.querySelector('.history-summary');
-        summaryEl.addEventListener('click', () => {
-          itemEl.classList.toggle('open');
+        const summary = item.querySelector('.history-summary');
+        summary.addEventListener('click', () => {
+          item.classList.toggle('open');
         });
 
-        listEl.appendChild(itemEl);
+        list.appendChild(item);
       });
 
-      modalBody.appendChild(listEl);
-    }
-
-    async function fetchInactiveItems() {
-      modalBody.innerHTML = '<div class="loading-container">Loading inactive items...</div>';
-      try {
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=inactive`);
-        const data = await res.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          modalBody.innerHTML = '<div class="loading-container">No inactive items found in Google Sheet.</div>';
-          return;
-        }
-
-        renderInactiveList(data);
-
-      } catch (err) {
-        modalBody.innerHTML = `<div class="loading-container" style="color:red;">Failed to load inactive items.<br><small>${err.message}</small></div>`;
-      }
-    }
-
-    function renderInactiveList(items) {
       modalBody.innerHTML = '';
-      
+      modalBody.appendChild(list);
+    }
+
+    function renderInactive(data) {
+      if (!data || data.length === 0) {
+        modalBody.innerHTML = '<div class="loading-container">No inactive items currently archived.</div>';
+        return;
+      }
+
       const table = document.createElement('table');
       table.className = 'history-table';
+      
+      let rowsHtml = '';
+      data.forEach((item, index) => {
+        rowsHtml += `
+          <tr>
+            <td><strong>${item.name}</strong></td>
+            <td>${item.cabinet}</td>
+            <td>${item.shelf}</td>
+            <td>
+              <button class="btn-reactivate" data-index="${index}">Reactivate Item</button>
+            </td>
+          </tr>
+        `;
+      });
+
       table.innerHTML = `
         <thead>
           <tr>
-            <th>Cabinet</th>
-            <th>Shelf</th>
             <th>Item Name</th>
-            <th>Target Min</th>
+            <th>Original Cabinet</th>
+            <th>Original Shelf</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          ${items.map((item, index) => `
-            <tr>
-              <td><strong>${item.cabinet}</strong></td>
-              <td>${item.shelf}</td>
-              <td>${item.name}</td>
-              <td>${item.minQty}</td>
-              <td>
-                <button class="btn-reactivate" data-index="${index}">➕ Reactivate</button>
-              </td>
-            </tr>
-          `).join('')}
+          ${rowsHtml}
         </tbody>
       `;
 
-      const reactivateButtons = table.querySelectorAll('.btn-reactivate');
-      reactivateButtons.forEach(btn => {
+      modalBody.innerHTML = '';
+      modalBody.appendChild(table);
+
+      const reactivateBtns = table.querySelectorAll('.btn-reactivate');
+      reactivateBtns.forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const idx = e.target.getAttribute('data-index');
-          const targetItem = items[idx];
-
-          const confirmReactivate = confirm(`Are you sure you want to reactivate "${targetItem.name}"?\n\nIt will be restored to ${targetItem.cabinet} > ${targetItem.shelf}.`);
-          if (!confirmReactivate) return;
+          const itemToRestore = data[idx];
 
           overlayTitle.innerText = "Reactivating Item...";
-          overlaySub.innerText = "Reactivating Item in Medical Supplies...";
+          overlaySub.innerText = "Restoring item to active inventory...";
           loadingOverlay.classList.add('active');
 
           try {
@@ -1154,32 +1063,88 @@
               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
                 action: "reactivateItem",
-                item: {
-                  cabinet: targetItem.cabinet,
-                  shelf: targetItem.shelf,
-                  name: targetItem.name
-                }
+                item: itemToRestore
               })
             });
 
             const resData = await res.json();
             if (resData.status === "success") {
               await loadDataFromSheet();
-              await fetchInactiveItems();
+              loadModalContent();
             } else {
-              alert("Failed to reactivate item: " + resData.message);
+              alert("Failed to reactivate: " + resData.message);
             }
           } catch (err) {
-            alert("Error reactivating item: " + err.message);
+            alert("Error sending request: " + err.message);
           } finally {
             loadingOverlay.classList.remove('active');
           }
         });
       });
-
-      modalBody.appendChild(table);
     }
 
+    // SUBMISSION LOGIC
+    submitBtn.addEventListener('click', async () => {
+      const inspector = inspectorInput.value.trim();
+      inspectorInput.classList.remove('error');
+
+      if (!inspector) {
+        inspectorInput.classList.add('error');
+        inspectorInput.focus();
+        alert('Please enter inspector name or initials.');
+        return;
+      }
+
+      const totalItems = [];
+      Object.keys(inventoryData).forEach(cab => {
+        Object.keys(inventoryData[cab]).forEach(shelf => {
+          inventoryData[cab][shelf].forEach(item => {
+            totalItems.push({
+              cabinet: cab,
+              shelf: shelf,
+              name: item.name,
+              min: item.minQty,
+              qty: item.currentQty,
+              exp: item.expDate || ''
+            });
+          });
+        });
+      });
+
+      overlayTitle.innerText = "Submitting Inspection...";
+      overlaySub.innerText = "Writing updates to Google Sheet...";
+      loadingOverlay.classList.add('active');
+
+      try {
+        const payload = {
+          action: "submitInspection",
+          inspector: inspector,
+          timestamp: new Date().toISOString(),
+          items: totalItems
+        };
+
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await res.json();
+
+        if (resData.status === "success") {
+          alert('Inspection submitted successfully!');
+          await loadDataFromSheet();
+        } else {
+          alert('Error updating sheet: ' + resData.message);
+        }
+      } catch (err) {
+        alert('Submission failed: ' + err.message);
+      } finally {
+        loadingOverlay.classList.remove('active');
+      }
+    });
+
+    // Start App
     loadDataFromSheet();
   </script>
 </body>
