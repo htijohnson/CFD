@@ -216,7 +216,7 @@
       background-color: #fff;
     }
 
-    .stock-input:focus, .exp-input:focus {
+    .stock-input:focus, .exp-input:focus, .inspector-input:focus {
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
@@ -305,7 +305,7 @@
       align-items: center;
       gap: 16px;
       flex-grow: 1;
-      max-width: 500px;
+      max-width: 400px;
     }
 
     .progress-bar-bg {
@@ -325,6 +325,27 @@
 
     .progress-bar-fill.complete {
       background-color: var(--success-text);
+    }
+
+    .inspector-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .inspector-input {
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      width: 160px;
+      transition: all 0.2s ease;
+    }
+
+    .inspector-input.error {
+      border-color: var(--danger-text);
+      background-color: var(--danger-bg);
     }
 
     .btn-submit {
@@ -359,9 +380,55 @@
     .btn-test:hover {
       background-color: #d35400;
     }
+
+    /* GREY-OUT LOADING OVERLAY */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(44, 62, 80, 0.7);
+      backdrop-filter: blur(3px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+
+  <!-- Fullscreen Grey Overlay -->
+  <div id="loadingOverlay" class="overlay">
+    <div class="spinner"></div>
+    <h2 style="margin: 0; font-size: 22px;">Submitting Inspection...</h2>
+    <p style="margin: 8px 0 0 0; color: #e2e8f0;">Updating Google Sheets live database. Please wait.</p>
+  </div>
 
   <header>
     <h1>Medical Supply Full Inspection</h1>
@@ -383,6 +450,12 @@
         <div class="progress-bar-fill" id="progressFill"></div>
       </div>
     </div>
+
+    <!-- Inspector Initials / Name Field -->
+    <div class="inspector-box">
+      <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Inspector Name / Initials</span>
+      <input type="text" id="inspectorName" class="inspector-input" placeholder="e.g. J.D." />
+    </div>
     
     <button id="testAutoFillBtn" class="btn-test">🧪 Test: Mark All Checked</button>
     <button id="submitBtn" class="btn-submit">Submit Entire Inspection</button>
@@ -400,6 +473,8 @@
     const progressFill = document.getElementById('progressFill');
     const submitBtn = document.getElementById('submitBtn');
     const testAutoFillBtn = document.getElementById('testAutoFillBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const inspectorInput = document.getElementById('inspectorName');
 
     // Fetch Inventory Data from Google Sheet
     async function loadDataFromSheet() {
@@ -493,7 +568,6 @@
         progressFill.classList.remove('complete');
       }
       
-      // TEST MODE: Submit button is ALWAYS enabled regardless of completion
       submitBtn.disabled = false;
     }
 
@@ -597,6 +671,11 @@
       updateGlobalProgress();
     }
 
+    // Clear error style on input
+    inspectorInput.addEventListener('input', () => {
+      inspectorInput.classList.remove('error');
+    });
+
     // TEST FEATURE: Auto-check all items instantly
     testAutoFillBtn.addEventListener('click', () => {
       Object.keys(inventoryData).forEach(cab => {
@@ -612,14 +691,31 @@
 
     // Submit Complete Inspection to Google Sheets
     submitBtn.addEventListener('click', async () => {
+      const inspectorVal = inspectorInput.value.trim();
+
+      // Validate Inspector Name
+      if (!inspectorVal) {
+        inspectorInput.classList.add('error');
+        inspectorInput.focus();
+        alert("Please enter the Inspector's Name or Initials before submitting.");
+        return;
+      }
+
+      // Attach inspector name to payload wrapper
+      const payload = {
+        inspector: inspectorVal,
+        inventory: inventoryData
+      };
+
+      // Show Grey Overlay & Disable Button
+      loadingOverlay.classList.add('active');
       submitBtn.disabled = true;
-      submitBtn.innerText = "Posting Submission...";
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(inventoryData)
+          body: JSON.stringify(payload)
         });
 
         const resData = await response.json();
@@ -628,13 +724,13 @@
           location.reload();
         } else {
           alert("Submission Error: " + resData.message);
+          loadingOverlay.classList.remove('active');
           submitBtn.disabled = false;
-          submitBtn.innerText = "Submit Entire Inspection";
         }
       } catch (err) {
         alert("Failed to connect to Google Sheets submission endpoint: " + err.message);
+        loadingOverlay.classList.remove('active');
         submitBtn.disabled = false;
-        submitBtn.innerText = "Submit Entire Inspection";
       }
     });
 
