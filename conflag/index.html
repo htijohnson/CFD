@@ -2,7 +2,6 @@
 <html>
 <head>
   <base target="_top">
-  <!-- PDF.js & Chart.js Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -17,12 +16,16 @@
       --down-green: #16a34a;
     }
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 12px;
     }
 
     .container { max-width: 1400px; margin: 0 auto; }
@@ -30,26 +33,35 @@
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      margin-bottom: 24px;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
+    /* Tab Buttons - Mobile Stackable */
     .tab-buttons {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn, .graph-btn {
+      flex: 1 1 auto;
+      min-height: 44px;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-align: center;
     }
 
     .tab-btn {
       background-color: #e2e8f0;
       color: var(--text);
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
     }
 
     .tab-btn.active {
@@ -60,41 +72,54 @@
     .graph-btn {
       background-color: #059669;
       color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-left: auto;
     }
 
     .graph-btn:hover { background-color: #047857; }
 
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
 
     label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
 
     select, input[type="text"], input[type="number"], input[type="file"] {
       width: 100%;
-      padding: 9px 12px;
+      min-height: 44px; /* Touch target */
+      padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 0.9rem;
+      border-radius: 8px;
+      font-size: 1rem; /* Prevents auto-zoom on iOS */
+      background: #fff;
     }
 
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    /* Mobile First Responsive Form Grids */
+    .grid-1, .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    @media (min-width: 640px) {
+      body { padding: 20px; }
+      .card { padding: 24px; margin-bottom: 24px; }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    }
 
     button.submit-btn {
+      width: 100%;
+      min-height: 48px;
       background-color: var(--primary);
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 12px;
     }
@@ -110,6 +135,7 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       margin-top: 12px;
+      -webkit-overflow-scrolling: touch;
     }
 
     table {
@@ -137,11 +163,10 @@
     tr.clickable-row:hover { background-color: #eff6ff; }
 
     .action-link { color: var(--primary); text-decoration: none; font-weight: 600; margin-right: 8px; }
-    .action-link:hover { text-decoration: underline; }
 
-    #status { margin-top: 12px; font-weight: 600; }
+    #status { margin-top: 12px; font-weight: 600; text-align: center; }
 
-    /* Modal Styling */
+    /* Modal Styling - Fullscreen on Mobile */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -151,18 +176,23 @@
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      padding: 8px;
     }
 
     .modal-card {
       background: #ffffff;
-      width: 90%;
+      width: 100%;
       max-width: 950px;
-      max-height: 90vh;
+      max-height: 95vh;
       overflow-y: auto;
       border-radius: 12px;
-      padding: 24px;
+      padding: 16px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
       position: relative;
+    }
+
+    @media (min-width: 640px) {
+      .modal-card { padding: 24px; }
     }
 
     .modal-header {
@@ -178,27 +208,33 @@
       background: #f1f5f9;
       border: none;
       font-size: 1.2rem;
-      padding: 6px 12px;
+      min-width: 36px;
+      height: 36px;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
     }
 
-    .close-btn:hover { background: #e2e8f0; }
-
     .widget-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1fr;
+      gap: 12px;
       margin-bottom: 16px;
+    }
+
+    @media (min-width: 480px) {
+      .widget-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 768px) {
+      .widget-grid { grid-template-columns: repeat(4, 1fr); }
     }
 
     .weather-widget {
       background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 16px;
-      position: relative;
+      padding: 14px;
     }
 
     .widget-title {
@@ -212,9 +248,9 @@
     }
 
     .widget-value {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 800;
-      margin: 8px 0;
+      margin: 6px 0;
       color: #0f172a;
     }
 
@@ -246,7 +282,7 @@
 
     .chart-container {
       position: relative;
-      height: 280px;
+      height: 240px;
       width: 100%;
       margin-bottom: 20px;
     }
@@ -255,16 +291,16 @@
 <body>
 
 <div class="container">
-  <h2>Incident Weather & Hazard Tracker</h2>
+  <h2 style="font-size: 1.4rem; margin-top: 0;">Incident Weather & Hazard Tracker</h2>
 
-  <!-- Mode Selector Tabs & Trend Charts Button -->
+  <!-- Mode Selector Tabs & Graph Modal Trigger -->
   <div class="tab-buttons">
-    <button class="tab-btn active" id="tabPdf" onclick="switchMode('pdf')">📄 Upload PDF Snapshot</button>
-    <button class="tab-btn" id="tabManual" onclick="switchMode('manual')">✍️ Manual Data Entry</button>
-    <button class="graph-btn" onclick="openGraphModal()">📊 View Incident Trend Graphs</button>
+    <button class="tab-btn active" id="tabPdf" onclick="switchMode('pdf')">📄 Upload PDF</button>
+    <button class="tab-btn" id="tabManual" onclick="switchMode('manual')">✍️ Manual Entry</button>
+    <button class="graph-btn" onclick="openGraphModal()">📊 Trend Graphs</button>
   </div>
 
-  <!-- Upload / Form Card -->
+  <!-- Main Card -->
   <div class="card">
     <div class="grid-2">
       <div class="form-group">
@@ -280,56 +316,126 @@
       </div>
     </div>
 
-    <!-- PDF Upload Mode -->
+    <!-- PDF Upload Section -->
     <div id="pdfUploadSection">
       <div class="form-group">
         <label for="pdfFile">Select Kestrel PDF File</label>
         <input type="file" id="pdfFile" accept="application/pdf">
       </div>
-      <button type="button" class="submit-btn" onclick="handlePdfUpload()">Upload PDF & Extract All Rows</button>
+      <button type="button" class="submit-btn" onclick="handlePdfUpload()">Upload PDF & Extract Rows</button>
     </div>
 
-    <!-- Manual Data Entry Mode -->
+    <!-- Mobile-Friendly Manual Entry Section -->
     <div id="manualEntrySection" style="display: none;">
-      <h4>Enter Snapshot Values</h4>
+      <h3 style="margin-top:0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Primary Weather Inputs</h3>
+      
       <div class="grid-4">
-        <div class="form-group"><label>Date / Time</label><input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 12:00:40"></div>
-        <div class="form-group"><label>Temperature (°F)</label><input type="number" step="0.1" id="m_temp"></div>
-        <div class="form-group"><label>Relative Humidity (%)</label><input type="number" step="0.1" id="m_rh"></div>
-        <div class="form-group"><label>Wind Speed (mph)</label><input type="number" step="0.1" id="m_windSpeed"></div>
+        <div class="form-group">
+          <label>Date / Time</label>
+          <input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 12:00:40">
+        </div>
+        <div class="form-group">
+          <label>Temperature (°F)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_temp" placeholder="74.0">
+        </div>
+        <div class="form-group">
+          <label>Relative Humidity (%)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_rh" placeholder="35.2">
+        </div>
+        <div class="form-group">
+          <label>Wind Speed (mph)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_windSpeed" placeholder="4.3">
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 16px;">Fire & Hazard Metrics</h3>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Prob. of Ignition (%)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_probIgnition" placeholder="60.0">
+        </div>
+        <div class="form-group">
+          <label>Heat Index (°F)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_heatIndex" placeholder="71.6">
+        </div>
+        <div class="form-group">
+          <label>Dew Point (°F)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_dewPoint" placeholder="44.8">
+        </div>
+        <div class="form-group">
+          <label>Wet Bulb Temp (°F)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_wetBulb" placeholder="56.5">
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 16px;">Pressure & Elevation</h3>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Wind Chill (°F)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_windChill" placeholder="73.9">
+        </div>
+        <div class="form-group">
+          <label>Station Press. (inHg)</label>
+          <input type="number" step="0.01" inputmode="decimal" id="m_stationPressure" placeholder="26.25">
+        </div>
+        <div class="form-group">
+          <label>Baro. Press. (inHg)</label>
+          <input type="number" step="0.01" inputmode="decimal" id="m_baroPressure" placeholder="26.25">
+        </div>
+        <div class="form-group">
+          <label>Altitude (ft)</label>
+          <input type="number" inputmode="numeric" id="m_altitude" placeholder="3879">
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 16px;">Navigation & Coordinates</h3>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Density Altitude (ft)</label>
+          <input type="number" inputmode="numeric" id="m_densityAltitude" placeholder="5494">
+        </div>
+        <div class="form-group">
+          <label>Compass Mag (Deg)</label>
+          <input type="number" inputmode="numeric" id="m_compassMag" placeholder="234">
+        </div>
+        <div class="form-group">
+          <label>Compass True (Deg)</label>
+          <input type="number" inputmode="numeric" id="m_compassTrue" placeholder="234">
+        </div>
+        <div class="form-group">
+          <label>Crosswind (mph)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_crosswind" placeholder="3.5">
+        </div>
       </div>
 
       <div class="grid-4">
-        <div class="form-group"><label>Probability of Ignition (%)</label><input type="number" step="0.1" id="m_probIgnition"></div>
-        <div class="form-group"><label>Heat Index (°F)</label><input type="number" step="0.1" id="m_heatIndex"></div>
-        <div class="form-group"><label>Dew Point (°F)</label><input type="number" step="0.1" id="m_dewPoint"></div>
-        <div class="form-group"><label>Wet Bulb Temp (°F)</label><input type="number" step="0.1" id="m_wetBulb"></div>
-      </div>
-
-      <div class="grid-4">
-        <div class="form-group"><label>Wind Chill (°F)</label><input type="number" step="0.1" id="m_windChill"></div>
-        <div class="form-group"><label>Station Pressure (inHg)</label><input type="number" step="0.01" id="m_stationPressure"></div>
-        <div class="form-group"><label>Barometric Pressure (inHg)</label><input type="number" step="0.01" id="m_baroPressure"></div>
-        <div class="form-group"><label>Altitude (ft)</label><input type="number" id="m_altitude"></div>
-      </div>
-
-      <div class="grid-4">
-        <div class="form-group"><label>Density Altitude (ft)</label><input type="number" id="m_densityAltitude"></div>
-        <div class="form-group"><label>Compass Mag (Deg)</label><input type="number" id="m_compassMag"></div>
-        <div class="form-group"><label>Compass True (Deg)</label><input type="number" id="m_compassTrue"></div>
-        <div class="form-group"><label>Crosswind (mph)</label><input type="number" step="0.1" id="m_crosswind"></div>
-      </div>
-
-      <div class="grid-4">
-        <div class="form-group"><label>Headwind (mph)</label><input type="number" step="0.1" id="m_headwind"></div>
-        <div class="form-group"><label>Latitude</label><input type="number" step="0.000001" id="m_lat" placeholder="e.g. 44.340267"></div>
-        <div class="form-group"><label>Longitude</label><input type="number" step="0.000001" id="m_lng" placeholder="e.g. -120.722166"></div>
-        <div class="form-group"><label>User Entering Info</label><input type="text" id="m_deviceName" placeholder="e.g. John Doe"></div>
+        <div class="form-group">
+          <label>Headwind (mph)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="m_headwind" placeholder="-2.5">
+        </div>
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" step="0.000001" inputmode="decimal" id="m_lat" placeholder="44.340267">
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" step="0.000001" inputmode="decimal" id="m_lng" placeholder="-120.722166">
+        </div>
+        <div class="form-group">
+          <label>User Entering Info</label>
+          <input type="text" id="m_deviceName" placeholder="e.g. John Doe">
+        </div>
       </div>
 
       <div class="grid-2">
-        <div class="form-group"><label>Location Address</label><input type="text" id="m_address" placeholder="Location Address"></div>
-        <div class="form-group"><label>Notes</label><input type="text" id="m_notes" placeholder="Notes"></div>
+        <div class="form-group">
+          <label>Location Address</label>
+          <input type="text" id="m_address" placeholder="9821 Meadow Ridge Rd...">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" id="m_notes" placeholder="Notes or observations">
+        </div>
       </div>
 
       <button type="button" class="submit-btn" onclick="handleManualSubmit()">Save Manual Entry</button>
@@ -338,11 +444,11 @@
     <div id="status"></div>
   </div>
 
-  <!-- Historical Logs Card -->
+  <!-- Historical Logs Table Card -->
   <div class="card">
-    <h3>Prior Logs & All Extracted PDF Rows</h3>
-    <p style="font-size: 0.85rem; color: var(--text-muted);">
-      💡 <strong>Click any row below</strong> to open the interactive <strong>Weather Widget Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span> compared strictly within that incident).
+    <h3 style="margin-top: 0; font-size: 1.1rem;">Prior Logs & Sheet Data</h3>
+    <p style="font-size: 0.8rem; color: var(--text-muted);">
+      💡 Tap any row below to open the <strong>Weather Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
     </p>
 
     <div class="table-container">
@@ -387,8 +493,8 @@
   <div class="modal-card">
     <div class="modal-header">
       <div>
-        <h3 id="modalIncidentTitle" style="margin:0">Incident Weather Dashboard</h3>
-        <span id="modalDateTime" style="font-size: 0.85rem; color: var(--text-muted);">Aug 1, 2026</span>
+        <h3 id="modalIncidentTitle" style="margin:0; font-size: 1.1rem;">Incident Weather Dashboard</h3>
+        <span id="modalDateTime" style="font-size: 0.8rem; color: var(--text-muted);">Aug 1, 2026</span>
       </div>
       <button class="close-btn" onclick="closeWidgetModal()">✕</button>
     </div>
@@ -423,7 +529,7 @@
       </div>
     </div>
 
-    <h4>Atmospheric & Navigation Details</h4>
+    <h4 style="font-size: 0.95rem; margin-bottom: 8px;">Atmospheric & Navigation Details</h4>
     <div class="widget-grid">
       <div class="weather-widget">
         <div class="widget-title">Pressures</div>
@@ -460,31 +566,31 @@
   </div>
 </div>
 
-<!-- INCIDENT TREND GRAPHS MODAL -->
+<!-- TREND GRAPHS MODAL -->
 <div class="modal-overlay" id="graphModal">
   <div class="modal-card">
     <div class="modal-header">
       <div>
-        <h3 style="margin:0">Incident Trend Graphs</h3>
-        <span style="font-size: 0.85rem; color: var(--text-muted);">Select an incident to plot historical trends over time</span>
+        <h3 style="margin:0; font-size: 1.1rem;">Incident Trend Graphs</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Historical trends over time</span>
       </div>
       <button class="close-btn" onclick="closeGraphModal()">✕</button>
     </div>
 
     <div class="form-group">
-      <label for="graphIncidentSelect">Select Incident to View Trends</label>
+      <label for="graphIncidentSelect">Select Incident</label>
       <select id="graphIncidentSelect" onchange="updateCharts()">
         <option value="">-- Loading Incidents... --</option>
       </select>
     </div>
 
     <div id="chartContainerArea">
-      <h4>Temperature & Relative Humidity Trend</h4>
+      <h4 style="font-size: 0.9rem;">Temperature & RH Trend</h4>
       <div class="chart-container">
         <canvas id="tempRhChart"></canvas>
       </div>
 
-      <h4>Wind Speed & Ignition Probability Trend</h4>
+      <h4 style="font-size: 0.9rem;">Wind Speed & Ignition Probability</h4>
       <div class="chart-container">
         <canvas id="windIgnChart"></canvas>
       </div>
@@ -851,7 +957,6 @@
     document.getElementById('widgetModal').style.display = 'none';
   }
 
-  /* --- INCIDENT TREND CHARTS LOGIC --- */
   function openGraphModal() {
     document.getElementById('graphModal').style.display = 'flex';
     updateCharts();
@@ -865,7 +970,6 @@
     const selectedIncident = document.getElementById('graphIncidentSelect').value;
     if (!selectedIncident) return;
 
-    // Filter logs for selected incident and sort chronologically (oldest first for left-to-right graphs)
     const incidentLogs = logsData
       .filter(l => l.incident === selectedIncident)
       .slice()
@@ -877,11 +981,9 @@
     const winds = incidentLogs.map(l => parseFloat(l["Wind Speed (mph)"]) || 0);
     const igns = incidentLogs.map(l => parseFloat(l["Probability of Ignition (%)"]) || 0);
 
-    // Destroy existing chart instances before re-rendering
     if (tempRhChartInstance) tempRhChartInstance.destroy();
     if (windIgnChartInstance) windIgnChartInstance.destroy();
 
-    // Chart 1: Temp & RH
     const ctx1 = document.getElementById('tempRhChart').getContext('2d');
     tempRhChartInstance = new Chart(ctx1, {
       type: 'line',
@@ -913,7 +1015,6 @@
       }
     });
 
-    // Chart 2: Wind & Ignition Prob
     const ctx2 = document.getElementById('windIgnChart').getContext('2d');
     windIgnChartInstance = new Chart(ctx2, {
       type: 'line',
