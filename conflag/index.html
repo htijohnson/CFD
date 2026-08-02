@@ -245,9 +245,45 @@
       width: 100%;
       margin-bottom: 20px;
     }
+
+    /* UPLOAD DIMMING OVERLAY */
+    #uploadOverlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+
+<!-- DIMMING SCREEN OVERLAY -->
+<div id="uploadOverlay">
+  <div class="spinner"></div>
+  <h3 id="uploadOverlayText" style="margin: 0; font-size: 1.2rem;">Uploading & Processing Data...</h3>
+  <p style="margin-top: 8px; font-size: 0.9rem; opacity: 0.8;">Please wait while the entry is saved.</p>
+</div>
 
 <div class="container">
   <h2 style="font-size: 1.4rem; margin-top: 0;">Incident Weather & Hazard Tracker</h2>
@@ -566,6 +602,15 @@
     loadInitialData();
   };
 
+  function showOverlay(msg) {
+    document.getElementById('uploadOverlayText').textContent = msg || 'Uploading & Processing Data...';
+    document.getElementById('uploadOverlay').style.display = 'flex';
+  }
+
+  function hideOverlay() {
+    document.getElementById('uploadOverlay').style.display = 'none';
+  }
+
   function switchMode(mode) {
     document.getElementById('tabCsv').classList.toggle('active', mode === 'csv');
     document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
@@ -637,6 +682,25 @@
     return select.value === '__NEW__' ? newNameInput.value.trim() : select.value;
   }
 
+  /**
+   * Helper function to check if a snapshot date/time already exists for an incident
+   */
+  function isDuplicateEntry(incidentName, dateTimeStr) {
+    if (!dateTimeStr || dateTimeStr === "Snapshot Date N/A" || dateTimeStr === "Snapshot Time N/A") {
+      return false;
+    }
+    
+    const normNewTime = String(dateTimeStr).trim().toLowerCase();
+
+    return logsData.some(log => {
+      if (log.incident === incidentName && log["Date Time"]) {
+        const normExistingTime = String(log["Date Time"]).trim().toLowerCase();
+        return normExistingTime === normNewTime;
+      }
+      return false;
+    });
+  }
+
   function handleCsvUpload() {
     const fileInput = document.getElementById('csvFile');
     const status = document.getElementById('status');
@@ -648,6 +712,8 @@
       return;
     }
 
+    // DIM SCREEN ON START
+    showOverlay('Parsing & Processing CSV File...');
     status.style.color = '#2563eb';
     status.textContent = 'Parsing & reformatting Kestrel CSV...';
 
@@ -659,6 +725,7 @@
       complete: function(results) {
         const rows = results.data;
         if (!rows || rows.length < 4) {
+          hideOverlay();
           status.style.color = '#dc2626';
           status.textContent = 'Invalid Kestrel CSV format (file too short).';
           return;
@@ -685,6 +752,7 @@
         }
 
         if (headerRowIdx === -1) {
+          hideOverlay();
           status.style.color = '#dc2626';
           status.textContent = 'Could not locate "FORMATTED DATE_TIME" row in CSV.';
           return;
@@ -710,8 +778,19 @@
           }
         }
 
+        const extractedDateTime = getVal('FORMATTED DATE_TIME') || "Snapshot Date N/A";
+
+        // CHECK FOR DUPLICATE ENTRY BEFORE SAVING
+        if (isDuplicateEntry(incidentName, extractedDateTime)) {
+          hideOverlay();
+          status.style.color = '#dc2626';
+          status.textContent = `⚠️ Duplicate Ignored: Entry for "${extractedDateTime}" already exists in ${incidentName}.`;
+          fileInput.value = '';
+          return;
+        }
+
         const stats = {
-          dateTime: getVal('FORMATTED DATE_TIME') || "Snapshot Date N/A",
+          dateTime: extractedDateTime,
           deviceName: deviceName || getVal('Device Name') || "N/A",
           deviceModelSerial: (deviceModel || serialNumber) ? `${deviceModel} (${serialNumber})` : "N/A",
           address: getVal('Location address') || "N/A",
@@ -779,6 +858,7 @@
         sendPayload(payload, status);
       },
       error: function(err) {
+        hideOverlay();
         status.style.color = '#dc2626';
         status.textContent = 'Error parsing CSV: ' + err.message;
       }
@@ -795,10 +875,20 @@
       return;
     }
 
-    const snapshotTimeInput = document.getElementById('m_dateTime').value.trim();
+    const snapshotTimeInput = document.getElementById('m_dateTime').value.trim() || "Snapshot Time N/A";
+
+    // CHECK FOR DUPLICATE ENTRY BEFORE SAVING
+    if (isDuplicateEntry(incidentName, snapshotTimeInput)) {
+      status.style.color = '#dc2626';
+      status.textContent = `⚠️ Duplicate Ignored: Entry for "${snapshotTimeInput}" already exists in ${incidentName}.`;
+      return;
+    }
+
+    // DIM SCREEN ON START
+    showOverlay('Saving Manual Entry...');
 
     const stats = {
-      dateTime: snapshotTimeInput || "Snapshot Time N/A",
+      dateTime: snapshotTimeInput,
       temp: document.getElementById('m_temp').value,
       rh: document.getElementById('m_rh').value,
       windSpeed: document.getElementById('m_windSpeed').value,
@@ -859,6 +949,7 @@
   }
 
   function handleSuccess(res, status) {
+    hideOverlay(); // UNDIM SCREEN WHEN COMPLETED
     status.style.color = '#16a34a';
     status.textContent = res.message || 'Saved successfully!';
     const csvInput = document.getElementById('csvFile');
@@ -868,6 +959,7 @@
   }
 
   function handleError(err, status) {
+    hideOverlay(); // UNDIM SCREEN ON ERROR
     status.style.color = '#dc2626';
     status.textContent = 'Error: ' + (err.message || err);
   }
