@@ -2,6 +2,7 @@
 <html>
 <head>
   <base target="_top">
+  <!-- PDF.js & Chart.js Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -403,7 +404,7 @@
   <div class="card">
     <h3 style="margin-top: 0; font-size: 1.1rem;">Prior Logs & Sheet Data</h3>
     <p style="font-size: 0.8rem; color: var(--text-muted);">
-      💡 Tap any row below to open the <strong>Weather Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
+      💡 Tap any row below to open the <strong>Weather Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>). All times shown in <strong>Pacific Time (PDT)</strong>.
     </p>
 
     <div class="table-container">
@@ -411,7 +412,7 @@
         <thead>
           <tr>
             <th>Incident</th>
-            <th>Snapshot Date / Time</th>
+            <th>Snapshot Date / Time (Pacific)</th>
             <th>Temp (°F)</th>
             <th>Heat Index (°F)</th>
             <th>RH (%)</th>
@@ -527,7 +528,7 @@
     <div class="modal-header">
       <div>
         <h3 style="margin:0; font-size: 1.1rem;">Incident Trend Graphs</h3>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">Historical trends over time</span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Historical trends over time (Pacific Time)</span>
       </div>
       <button class="close-btn" onclick="closeGraphModal()">✕</button>
     </div>
@@ -659,7 +660,6 @@
     const textContent = await page.getTextContent();
     const txt = textContent.items.map(item => item.str).join(' ');
 
-    // Extract exact Snapshot Date Time from PDF text
     const extractedTime = extractVal(txt, /Time\s*([A-Za-z]+\s*\d{1,2},\s*\d{4}\s*\/\s*\d{2}:\d{2}:\d{2})/) || 
                           extractVal(txt, /Snapshot Name\s*Snapshot\s*-\s*([A-Za-z0-9,\s:]+)/);
 
@@ -801,6 +801,26 @@
     return m ? m[1].trim() : null;
   }
 
+  /**
+   * Formats ISO or UTC timestamps into Pacific Time (PDT/PST).
+   */
+  function formatPacificTime(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr; // Return original if not a valid ISO date
+
+    return d.toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    }) + ' PDT';
+  }
+
   function renderLogsTable() {
     const tbody = document.getElementById('logsTableBody');
     tbody.innerHTML = '';
@@ -822,13 +842,15 @@
       const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank" onclick="event.stopPropagation()">📍 Map</a>` : '';
       const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank" onclick="event.stopPropagation()">📄 PDF</a>` : '';
 
+      const formattedDateTime = formatPacificTime(log["Date Time"]);
+
       const row = document.createElement('tr');
       row.className = 'clickable-row';
       row.onclick = () => openWidgetModal(index);
 
       row.innerHTML = `
         <td><strong>${escapeHtml(log.incident)}</strong></td>
-        <td>${escapeHtml(log["Date Time"])}</td>
+        <td>${escapeHtml(formattedDateTime)}</td>
         <td>${fmtVal(log["Temperature (°F)"])} ${getTrendBadge(log["Temperature (°F)"], prevSameIncident ? prevSameIncident["Temperature (°F)"] : null)}</td>
         <td>${fmtVal(log["Heat Index (°F)"])} ${getTrendBadge(log["Heat Index (°F)"], prevSameIncident ? prevSameIncident["Heat Index (°F)"] : null)}</td>
         <td>${fmtVal(log["Relative Humidity (%)"])} ${getTrendBadge(log["Relative Humidity (%)"], prevSameIncident ? prevSameIncident["Relative Humidity (%)"] : null)}</td>
@@ -861,7 +883,7 @@
     if (!log) return;
 
     document.getElementById('modalIncidentTitle').textContent = log.incident || 'Incident Snapshot';
-    document.getElementById('modalDateTime').textContent = log["Date Time"] || '';
+    document.getElementById('modalDateTime').textContent = formatPacificTime(log["Date Time"]);
 
     const temp = parseFloat(log["Temperature (°F)"]) || 0;
     document.getElementById('w_temp').textContent = temp + ' °F';
@@ -936,7 +958,7 @@
       .slice()
       .reverse();
 
-    const labels = incidentLogs.map(l => l["Date Time"]);
+    const labels = incidentLogs.map(l => formatPacificTime(l["Date Time"]));
     const temps = incidentLogs.map(l => parseFloat(l["Temperature (°F)"]) || 0);
     const rhs = incidentLogs.map(l => parseFloat(l["Relative Humidity (%)"]) || 0);
     const winds = incidentLogs.map(l => parseFloat(l["Wind Speed (mph)"]) || 0);
