@@ -59,7 +59,7 @@
 
     label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
 
-    select, input[type="text"], input[type="number"], input[type="file"], input[type="datetime-local"] {
+    select, input[type="text"], input[type="number"], input[type="file"] {
       width: 100%;
       padding: 9px 12px;
       border: 1px solid var(--border);
@@ -118,10 +118,124 @@
       top: 0;
     }
 
+    tr.clickable-row { cursor: pointer; transition: background-color 0.15s; }
+    tr.clickable-row:hover { background-color: #eff6ff; }
+
     .action-link { color: var(--primary); text-decoration: none; font-weight: 600; margin-right: 8px; }
     .action-link:hover { text-decoration: underline; }
 
     #status { margin-top: 12px; font-weight: 600; }
+
+    /* --- MODAL DASHBOARD WIDGET STYLES --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 90%;
+      max-width: 950px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .close-btn {
+      background: #f1f5f9;
+      border: none;
+      font-size: 1.2rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .close-btn:hover { background: #e2e8f0; }
+
+    /* Weather Widget Design Cards */
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .weather-widget {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .widget-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .widget-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin: 8px 0;
+      color: #0f172a;
+    }
+
+    .widget-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      height: 6px;
+      width: 100%;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .hazard-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .hazard-high { background: #fee2e2; color: #991b1b; }
+    .hazard-med { background: #fef3c7; color: #92400e; }
+    .hazard-low { background: #dcfce7; color: #166534; }
   </style>
 </head>
 <body>
@@ -164,109 +278,43 @@
     <div id="manualEntrySection" style="display: none;">
       <h4>Enter Snapshot Values</h4>
       <div class="grid-4">
-        <div class="form-group">
-          <label>Date / Time</label>
-          <input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 12:00:40">
-        </div>
-        <div class="form-group">
-          <label>Temperature (°F)</label>
-          <input type="number" step="0.1" id="m_temp">
-        </div>
-        <div class="form-group">
-          <label>Relative Humidity (%)</label>
-          <input type="number" step="0.1" id="m_rh">
-        </div>
-        <div class="form-group">
-          <label>Wind Speed (mph)</label>
-          <input type="number" step="0.1" id="m_windSpeed">
-        </div>
+        <div class="form-group"><label>Date / Time</label><input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 12:00:40"></div>
+        <div class="form-group"><label>Temperature (°F)</label><input type="number" step="0.1" id="m_temp"></div>
+        <div class="form-group"><label>Relative Humidity (%)</label><input type="number" step="0.1" id="m_rh"></div>
+        <div class="form-group"><label>Wind Speed (mph)</label><input type="number" step="0.1" id="m_windSpeed"></div>
       </div>
 
       <div class="grid-4">
-        <div class="form-group">
-          <label>Probability of Ignition (%)</label>
-          <input type="number" step="0.1" id="m_probIgnition">
-        </div>
-        <div class="form-group">
-          <label>Heat Index (°F)</label>
-          <input type="number" step="0.1" id="m_heatIndex">
-        </div>
-        <div class="form-group">
-          <label>Dew Point (°F)</label>
-          <input type="number" step="0.1" id="m_dewPoint">
-        </div>
-        <div class="form-group">
-          <label>Wet Bulb Temp (°F)</label>
-          <input type="number" step="0.1" id="m_wetBulb">
-        </div>
+        <div class="form-group"><label>Probability of Ignition (%)</label><input type="number" step="0.1" id="m_probIgnition"></div>
+        <div class="form-group"><label>Heat Index (°F)</label><input type="number" step="0.1" id="m_heatIndex"></div>
+        <div class="form-group"><label>Dew Point (°F)</label><input type="number" step="0.1" id="m_dewPoint"></div>
+        <div class="form-group"><label>Wet Bulb Temp (°F)</label><input type="number" step="0.1" id="m_wetBulb"></div>
       </div>
 
       <div class="grid-4">
-        <div class="form-group">
-          <label>Wind Chill (°F)</label>
-          <input type="number" step="0.1" id="m_windChill">
-        </div>
-        <div class="form-group">
-          <label>Station Pressure (inHg)</label>
-          <input type="number" step="0.01" id="m_stationPressure">
-        </div>
-        <div class="form-group">
-          <label>Barometric Pressure (inHg)</label>
-          <input type="number" step="0.01" id="m_baroPressure">
-        </div>
-        <div class="form-group">
-          <label>Altitude (ft)</label>
-          <input type="number" id="m_altitude">
-        </div>
+        <div class="form-group"><label>Wind Chill (°F)</label><input type="number" step="0.1" id="m_windChill"></div>
+        <div class="form-group"><label>Station Pressure (inHg)</label><input type="number" step="0.01" id="m_stationPressure"></div>
+        <div class="form-group"><label>Barometric Pressure (inHg)</label><input type="number" step="0.01" id="m_baroPressure"></div>
+        <div class="form-group"><label>Altitude (ft)</label><input type="number" id="m_altitude"></div>
       </div>
 
       <div class="grid-4">
-        <div class="form-group">
-          <label>Density Altitude (ft)</label>
-          <input type="number" id="m_densityAltitude">
-        </div>
-        <div class="form-group">
-          <label>Compass Mag (Deg)</label>
-          <input type="number" id="m_compassMag">
-        </div>
-        <div class="form-group">
-          <label>Compass True (Deg)</label>
-          <input type="number" id="m_compassTrue">
-        </div>
-        <div class="form-group">
-          <label>Crosswind (mph)</label>
-          <input type="number" step="0.1" id="m_crosswind">
-        </div>
+        <div class="form-group"><label>Density Altitude (ft)</label><input type="number" id="m_densityAltitude"></div>
+        <div class="form-group"><label>Compass Mag (Deg)</label><input type="number" id="m_compassMag"></div>
+        <div class="form-group"><label>Compass True (Deg)</label><input type="number" id="m_compassTrue"></div>
+        <div class="form-group"><label>Crosswind (mph)</label><input type="number" step="0.1" id="m_crosswind"></div>
       </div>
 
       <div class="grid-4">
-        <div class="form-group">
-          <label>Headwind (mph)</label>
-          <input type="number" step="0.1" id="m_headwind">
-        </div>
-        <div class="form-group">
-          <label>Latitude</label>
-          <input type="number" step="0.000001" id="m_lat" placeholder="e.g. 44.340267">
-        </div>
-        <div class="form-group">
-          <label>Longitude</label>
-          <input type="number" step="0.000001" id="m_lng" placeholder="e.g. -120.722166">
-        </div>
-        <div class="form-group">
-          <label>Name</label>
-          <input type="text" id="m_deviceName" placeholder="Name">
-        </div>
+        <div class="form-group"><label>Headwind (mph)</label><input type="number" step="0.1" id="m_headwind"></div>
+        <div class="form-group"><label>Latitude</label><input type="number" step="0.000001" id="m_lat" placeholder="e.g. 44.340267"></div>
+        <div class="form-group"><label>Longitude</label><input type="number" step="0.000001" id="m_lng" placeholder="e.g. -120.722166"></div>
+        <div class="form-group"><label>User Entering Info</label><input type="text" id="m_deviceName" placeholder="e.g. John Doe"></div>
       </div>
 
       <div class="grid-2">
-        <div class="form-group">
-          <label>Location Address</label>
-          <input type="text" id="m_address" placeholder="Location Address">
-        </div>
-        <div class="form-group">
-          <label>Notes</label>
-          <input type="text" id="m_notes" placeholder="Notes">
-        </div>
+        <div class="form-group"><label>Location Address</label><input type="text" id="m_address" placeholder="Location Address"></div>
+        <div class="form-group"><label>Notes</label><input type="text" id="m_notes" placeholder="Notes"></div>
       </div>
 
       <button type="button" class="submit-btn" onclick="handleManualSubmit()">Save Manual Entry</button>
@@ -279,7 +327,7 @@
   <div class="card">
     <h3>Prior Logs & All Extracted PDF Rows</h3>
     <p style="font-size: 0.85rem; color: var(--text-muted);">
-      Data pulled directly from Google Sheets (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>). Scroll horizontally to view all columns.
+      💡 <strong>Click any row below</strong> to open the interactive <strong>Weather Widget Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
     </p>
 
     <div class="table-container">
@@ -305,7 +353,7 @@
             <th>Compass Mag</th>
             <th>Compass True</th>
             <th>Location Address</th>
-            <th>Device Name</th>
+            <th>User Entering Info</th>
             <th>Model & Serial</th>
             <th>Notes</th>
             <th>Actions</th>
@@ -315,6 +363,86 @@
           <tr><td colspan="23">Loading logs from sheet...</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE-WITHIN-A-PAGE: WEATHER WIDGET MODAL -->
+<div class="modal-overlay" id="widgetModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalIncidentTitle" style="margin:0">Incident Weather Dashboard</h3>
+        <span id="modalDateTime" style="font-size: 0.85rem; color: var(--text-muted);">Aug 1, 2026</span>
+      </div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- Primary Key Metric Widgets -->
+    <div class="widget-grid">
+      <div class="weather-widget">
+        <div class="widget-title"><span>Temperature</span> <span>🌡️</span></div>
+        <div class="widget-value" id="w_temp">74.0 °F</div>
+        <div class="widget-sub" id="w_tempSub">Heat Index: 71.6 °F</div>
+        <div class="progress-bar"><div class="progress-fill" id="w_tempBar" style="width: 60%; background: #f97316;"></div></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title"><span>Relative Humidity</span> <span>💧</span></div>
+        <div class="widget-value" id="w_rh">35.2 %</div>
+        <div class="widget-sub" id="w_rhSub">Dew Point: 44.8 °F</div>
+        <div class="progress-bar"><div class="progress-fill" id="w_rhBar" style="width: 35%; background: #3b82f6;"></div></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title"><span>Wind Speed</span> <span>💨</span></div>
+        <div class="widget-value" id="w_wind">4.3 mph</div>
+        <div class="widget-sub" id="w_windSub">Cross: 3.5 | Head: -2.5</div>
+        <div class="progress-bar"><div class="progress-fill" id="w_windBar" style="width: 25%; background: #06b6d4;"></div></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title"><span>Ignition Prob.</span> <span>🔥</span></div>
+        <div class="widget-value" id="w_pIgn">60.0 %</div>
+        <div class="widget-sub"><span class="hazard-badge hazard-high" id="w_hazardBadge">HIGH HAZARD</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="w_pIgnBar" style="width: 60%; background: #ef4444;"></div></div>
+      </div>
+    </div>
+
+    <!-- Secondary Parameter Grid Widgets -->
+    <h4>Atmospheric & Navigation Details</h4>
+    <div class="widget-grid">
+      <div class="weather-widget">
+        <div class="widget-title">Pressures</div>
+        <div class="widget-sub" style="margin-top:6px">Station: <strong id="w_statPress">26.25 inHg</strong></div>
+        <div class="widget-sub">Barometric: <strong id="w_baroPress">26.25 inHg</strong></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title">Altitudes</div>
+        <div class="widget-sub" style="margin-top:6px">Station Alt: <strong id="w_alt">3879 ft</strong></div>
+        <div class="widget-sub">Density Alt: <strong id="w_denAlt">5494 ft</strong></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title">Compass Bearings</div>
+        <div class="widget-sub" style="margin-top:6px">Magnetic: <strong id="w_cMag">234°</strong></div>
+        <div class="widget-sub">True Direction: <strong id="w_cTrue">234°</strong></div>
+      </div>
+
+      <div class="weather-widget">
+        <div class="widget-title">Thermal Index</div>
+        <div class="widget-sub" style="margin-top:6px">Wet Bulb: <strong id="w_wetBulb">56.5 °F</strong></div>
+        <div class="widget-sub">Wind Chill: <strong id="w_windChill">73.9 °F</strong></div>
+      </div>
+    </div>
+
+    <div class="weather-widget" style="margin-top:12px">
+      <div class="widget-title">Location & Metadata</div>
+      <div class="widget-sub" style="margin-top:6px"><strong>Address:</strong> <span id="w_address">N/A</span></div>
+      <div class="widget-sub"><strong>User Entering Info:</strong> <span id="w_device">N/A</span></div>
+      <div class="widget-sub"><strong>Notes:</strong> <span id="w_notes">N/A</span></div>
+      <div style="margin-top:10px;" id="w_modalLinks"></div>
     </div>
   </div>
 </div>
@@ -344,7 +472,7 @@
         .then(res => res.json())
         .then(data => renderInitialData(data))
         .catch(err => {
-          console.error(err);
+          console.error('Fetch error:', err);
           renderInitialData({ incidents: [], logs: [] });
         });
     }
@@ -354,13 +482,11 @@
     const select = document.getElementById('incidentSelect');
     select.innerHTML = '';
 
-    // Standard option for creating a brand new incident
     const newOpt = document.createElement('option');
     newOpt.value = '__NEW__';
     newOpt.textContent = '+ Enter New Incident';
     select.appendChild(newOpt);
 
-    // Populate existing incident sheets directly from Google Sheets
     if (data && data.incidents && data.incidents.length > 0) {
       data.incidents.forEach(inc => {
         const opt = document.createElement('option');
@@ -368,7 +494,7 @@
         opt.textContent = inc;
         select.appendChild(opt);
       });
-      select.value = data.incidents[0]; // Default to the first existing incident
+      select.value = data.incidents[0];
     } else {
       select.value = '__NEW__';
     }
@@ -382,11 +508,7 @@
   function toggleNewIncidentInput() {
     const select = document.getElementById('incidentSelect');
     const newGroup = document.getElementById('newIncidentGroup');
-    if (select.value === '__NEW__') {
-      newGroup.style.display = 'block';
-    } else {
-      newGroup.style.display = 'none';
-    }
+    newGroup.style.display = select.value === '__NEW__' ? 'block' : 'none';
   }
 
   function getSelectedIncidentName() {
@@ -565,10 +687,13 @@
     logsData.forEach((log, index) => {
       const prev = logsData[index + 1] || {};
 
-      const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank">📍 Map</a>` : '';
-      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 PDF</a>` : '';
+      const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank" onclick="event.stopPropagation()">📍 Map</a>` : '';
+      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank" onclick="event.stopPropagation()">📄 PDF</a>` : '';
 
       const row = document.createElement('tr');
+      row.className = 'clickable-row';
+      row.onclick = () => openWidgetModal(index);
+
       row.innerHTML = `
         <td><strong>${escapeHtml(log.incident)}</strong></td>
         <td>${escapeHtml(log["Date Time"])}</td>
@@ -597,6 +722,74 @@
 
       tbody.appendChild(row);
     });
+  }
+
+  /* --- WIDGET MODAL POPULATOR --- */
+  function openWidgetModal(idx) {
+    const log = logsData[idx];
+    if (!log) return;
+
+    document.getElementById('modalIncidentTitle').textContent = log.incident || 'Incident Snapshot';
+    document.getElementById('modalDateTime').textContent = log["Date Time"] || '';
+
+    // Temp Widget
+    const temp = parseFloat(log["Temperature (°F)"]) || 0;
+    document.getElementById('w_temp').textContent = temp + ' °F';
+    document.getElementById('w_tempSub').textContent = 'Heat Index: ' + (log["Heat Index (°F)"] || 'N/A') + ' °F';
+    document.getElementById('w_tempBar').style.width = Math.min(100, Math.max(0, (temp / 120) * 100)) + '%';
+
+    // RH Widget
+    const rh = parseFloat(log["Relative Humidity (%)"]) || 0;
+    document.getElementById('w_rh').textContent = rh + ' %';
+    document.getElementById('w_rhSub').textContent = 'Dew Point: ' + (log["Dew Point (°F)"] || 'N/A') + ' °F';
+    document.getElementById('w_rhBar').style.width = Math.min(100, Math.max(0, rh)) + '%';
+
+    // Wind Widget
+    const wind = parseFloat(log["Wind Speed (mph)"]) || 0;
+    document.getElementById('w_wind').textContent = wind + ' mph';
+    document.getElementById('w_windSub').textContent = 'Cross: ' + (log["Crosswind (mph)"] || 0) + ' | Head: ' + (log["Headwind (mph)"] || 0);
+    document.getElementById('w_windBar').style.width = Math.min(100, Math.max(0, (wind / 50) * 100)) + '%';
+
+    // Ignition Widget
+    const pIgn = parseFloat(log["Probability of Ignition (%)"]) || 0;
+    document.getElementById('w_pIgn').textContent = pIgn + ' %';
+    document.getElementById('w_pIgnBar').style.width = Math.min(100, Math.max(0, pIgn)) + '%';
+
+    const badge = document.getElementById('w_hazardBadge');
+    if (pIgn >= 60) {
+      badge.textContent = 'EXTREME IGNITION HAZARD';
+      badge.className = 'hazard-badge hazard-high';
+    } else if (pIgn >= 30) {
+      badge.textContent = 'MODERATE HAZARD';
+      badge.className = 'hazard-badge hazard-med';
+    } else {
+      badge.textContent = 'LOW HAZARD';
+      badge.className = 'hazard-badge hazard-low';
+    }
+
+    // Secondary Grid Widgets
+    document.getElementById('w_statPress').textContent = (log["Station Pressure (inHg)"] || 'N/A') + ' inHg';
+    document.getElementById('w_baroPress').textContent = (log["Barometric Pressure (inHg)"] || 'N/A') + ' inHg';
+    document.getElementById('w_alt').textContent = (log["Altitude (ft)"] || 'N/A') + ' ft';
+    document.getElementById('w_denAlt').textContent = (log["Density Altitude (ft)"] || 'N/A') + ' ft';
+    document.getElementById('w_cMag').textContent = (log["Compass Mag Direction (Deg)"] || 'N/A') + '°';
+    document.getElementById('w_cTrue').textContent = (log["Compass True Direction (Deg)"] || 'N/A') + '°';
+    document.getElementById('w_wetBulb').textContent = (log["Wet Bulb Temp (°F)"] || 'N/A') + ' °F';
+    document.getElementById('w_windChill').textContent = (log["Wind Chill (°F)"] || 'N/A') + ' °F';
+
+    document.getElementById('w_address').textContent = log["Location Address"] || 'N/A';
+    document.getElementById('w_device').textContent = (log["Device Name"] || '') + ' (' + (log["Device Model & Serial"] || 'N/A') + ')';
+    document.getElementById('w_notes').textContent = log["Notes"] || 'None';
+
+    const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank">📍 Open Location Map</a>` : '';
+    const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 Open Stored PDF</a>` : '';
+    document.getElementById('w_modalLinks').innerHTML = mapLink + ' ' + pdfLink;
+
+    document.getElementById('widgetModal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('widgetModal').style.display = 'none';
   }
 
   function fmtVal(v) {
