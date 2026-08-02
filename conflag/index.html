@@ -126,7 +126,7 @@
 
     #status { margin-top: 12px; font-weight: 600; }
 
-    /* --- MODAL DASHBOARD WIDGET STYLES --- */
+    /* Modal Widget Dashboard Styles */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -171,7 +171,6 @@
 
     .close-btn:hover { background: #e2e8f0; }
 
-    /* Weather Widget Design Cards */
     .widget-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -204,10 +203,7 @@
       color: #0f172a;
     }
 
-    .widget-sub {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
+    .widget-sub { font-size: 0.8rem; color: var(--text-muted); }
 
     .progress-bar {
       height: 6px;
@@ -218,11 +214,7 @@
       margin-top: 8px;
     }
 
-    .progress-fill {
-      height: 100%;
-      background: var(--primary);
-      border-radius: 3px;
-    }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; }
 
     .hazard-badge {
       display: inline-block;
@@ -327,7 +319,7 @@
   <div class="card">
     <h3>Prior Logs & All Extracted PDF Rows</h3>
     <p style="font-size: 0.85rem; color: var(--text-muted);">
-      💡 <strong>Click any row below</strong> to open the interactive <strong>Weather Widget Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
+      💡 <strong>Click any row below</strong> to open the interactive <strong>Weather Widget Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span> compared strictly within that incident).
     </p>
 
     <div class="table-container">
@@ -367,7 +359,7 @@
   </div>
 </div>
 
-<!-- PAGE-WITHIN-A-PAGE: WEATHER WIDGET MODAL -->
+<!-- WEATHER WIDGET MODAL -->
 <div class="modal-overlay" id="widgetModal">
   <div class="modal-card">
     <div class="modal-header">
@@ -378,7 +370,6 @@
       <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
 
-    <!-- Primary Key Metric Widgets -->
     <div class="widget-grid">
       <div class="weather-widget">
         <div class="widget-title"><span>Temperature</span> <span>🌡️</span></div>
@@ -409,7 +400,6 @@
       </div>
     </div>
 
-    <!-- Secondary Parameter Grid Widgets -->
     <h4>Atmospheric & Navigation Details</h4>
     <div class="widget-grid">
       <div class="weather-widget">
@@ -685,7 +675,14 @@
     }
 
     logsData.forEach((log, index) => {
-      const prev = logsData[index + 1] || {};
+      // Find previous log specifically belonging to the SAME incident
+      let prevSameIncident = null;
+      for (let i = index + 1; i < logsData.length; i++) {
+        if (logsData[i].incident === log.incident) {
+          prevSameIncident = logsData[i];
+          break;
+        }
+      }
 
       const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank" onclick="event.stopPropagation()">📍 Map</a>` : '';
       const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank" onclick="event.stopPropagation()">📄 PDF</a>` : '';
@@ -697,22 +694,22 @@
       row.innerHTML = `
         <td><strong>${escapeHtml(log.incident)}</strong></td>
         <td>${escapeHtml(log["Date Time"])}</td>
-        <td>${fmtVal(log["Temperature (°F)"])} ${getTrendBadge(log["Temperature (°F)"], prev["Temperature (°F)"])}</td>
-        <td>${fmtVal(log["Heat Index (°F)"])} ${getTrendBadge(log["Heat Index (°F)"], prev["Heat Index (°F)"])}</td>
-        <td>${fmtVal(log["Relative Humidity (%)"])} ${getTrendBadge(log["Relative Humidity (%)"], prev["Relative Humidity (%)"])}</td>
-        <td>${fmtVal(log["Wind Speed (mph)"])} ${getTrendBadge(log["Wind Speed (mph)"], prev["Wind Speed (mph)"])}</td>
-        <td>${fmtVal(log["Probability of Ignition (%)"])} ${getTrendBadge(log["Probability of Ignition (%)"], prev["Probability of Ignition (%)"])}</td>
-        <td>${fmtVal(log["Dew Point (°F)"])} ${getTrendBadge(log["Dew Point (°F)"], prev["Dew Point (°F)"])}</td>
-        <td>${fmtVal(log["Wet Bulb Temp (°F)"])} ${getTrendBadge(log["Wet Bulb Temp (°F)"], prev["Wet Bulb Temp (°F)"])}</td>
-        <td>${fmtVal(log["Wind Chill (°F)"])} ${getTrendBadge(log["Wind Chill (°F)"], prev["Wind Chill (°F)"])}</td>
-        <td>${fmtVal(log["Station Pressure (inHg)"])} ${getTrendBadge(log["Station Pressure (inHg)"], prev["Station Pressure (inHg)"])}</td>
-        <td>${fmtVal(log["Barometric Pressure (inHg)"])} ${getTrendBadge(log["Barometric Pressure (inHg)"], prev["Barometric Pressure (inHg)"])}</td>
-        <td>${fmtVal(log["Altitude (ft)"])} ${getTrendBadge(log["Altitude (ft)"], prev["Altitude (ft)"])}</td>
-        <td>${fmtVal(log["Density Altitude (ft)"])} ${getTrendBadge(log["Density Altitude (ft)"], prev["Density Altitude (ft)"])}</td>
-        <td>${fmtVal(log["Crosswind (mph)"])} ${getTrendBadge(log["Crosswind (mph)"], prev["Crosswind (mph)"])}</td>
-        <td>${fmtVal(log["Headwind (mph)"])} ${getTrendBadge(log["Headwind (mph)"], prev["Headwind (mph)"])}</td>
-        <td>${fmtVal(log["Compass Mag Direction (Deg)"])} ${getTrendBadge(log["Compass Mag Direction (Deg)"], prev["Compass Mag Direction (Deg)"])}</td>
-        <td>${fmtVal(log["Compass True Direction (Deg)"])} ${getTrendBadge(log["Compass True Direction (Deg)"], prev["Compass True Direction (Deg)"])}</td>
+        <td>${fmtVal(log["Temperature (°F)"])} ${getTrendBadge(log["Temperature (°F)"], prevSameIncident ? prevSameIncident["Temperature (°F)"] : null)}</td>
+        <td>${fmtVal(log["Heat Index (°F)"])} ${getTrendBadge(log["Heat Index (°F)"], prevSameIncident ? prevSameIncident["Heat Index (°F)"] : null)}</td>
+        <td>${fmtVal(log["Relative Humidity (%)"])} ${getTrendBadge(log["Relative Humidity (%)"], prevSameIncident ? prevSameIncident["Relative Humidity (%)"] : null)}</td>
+        <td>${fmtVal(log["Wind Speed (mph)"])} ${getTrendBadge(log["Wind Speed (mph)"], prevSameIncident ? prevSameIncident["Wind Speed (mph)"] : null)}</td>
+        <td>${fmtVal(log["Probability of Ignition (%)"])} ${getTrendBadge(log["Probability of Ignition (%)"], prevSameIncident ? prevSameIncident["Probability of Ignition (%)"] : null)}</td>
+        <td>${fmtVal(log["Dew Point (°F)"])} ${getTrendBadge(log["Dew Point (°F)"], prevSameIncident ? prevSameIncident["Dew Point (°F)"] : null)}</td>
+        <td>${fmtVal(log["Wet Bulb Temp (°F)"])} ${getTrendBadge(log["Wet Bulb Temp (°F)"], prevSameIncident ? prevSameIncident["Wet Bulb Temp (°F)"] : null)}</td>
+        <td>${fmtVal(log["Wind Chill (°F)"])} ${getTrendBadge(log["Wind Chill (°F)"], prevSameIncident ? prevSameIncident["Wind Chill (°F)"] : null)}</td>
+        <td>${fmtVal(log["Station Pressure (inHg)"])} ${getTrendBadge(log["Station Pressure (inHg)"], prevSameIncident ? prevSameIncident["Station Pressure (inHg)"] : null)}</td>
+        <td>${fmtVal(log["Barometric Pressure (inHg)"])} ${getTrendBadge(log["Barometric Pressure (inHg)"], prevSameIncident ? prevSameIncident["Barometric Pressure (inHg)"] : null)}</td>
+        <td>${fmtVal(log["Altitude (ft)"])} ${getTrendBadge(log["Altitude (ft)"], prevSameIncident ? prevSameIncident["Altitude (ft)"] : null)}</td>
+        <td>${fmtVal(log["Density Altitude (ft)"])} ${getTrendBadge(log["Density Altitude (ft)"], prevSameIncident ? prevSameIncident["Density Altitude (ft)"] : null)}</td>
+        <td>${fmtVal(log["Crosswind (mph)"])} ${getTrendBadge(log["Crosswind (mph)"], prevSameIncident ? prevSameIncident["Crosswind (mph)"] : null)}</td>
+        <td>${fmtVal(log["Headwind (mph)"])} ${getTrendBadge(log["Headwind (mph)"], prevSameIncident ? prevSameIncident["Headwind (mph)"] : null)}</td>
+        <td>${fmtVal(log["Compass Mag Direction (Deg)"])} ${getTrendBadge(log["Compass Mag Direction (Deg)"], prevSameIncident ? prevSameIncident["Compass Mag Direction (Deg)"] : null)}</td>
+        <td>${fmtVal(log["Compass True Direction (Deg)"])} ${getTrendBadge(log["Compass True Direction (Deg)"], prevSameIncident ? prevSameIncident["Compass True Direction (Deg)"] : null)}</td>
         <td>${escapeHtml(log["Location Address"] || '')}</td>
         <td>${escapeHtml(log["Device Name"] || '')}</td>
         <td>${escapeHtml(log["Device Model & Serial"] || '')}</td>
@@ -724,7 +721,6 @@
     });
   }
 
-  /* --- WIDGET MODAL POPULATOR --- */
   function openWidgetModal(idx) {
     const log = logsData[idx];
     if (!log) return;
@@ -732,25 +728,21 @@
     document.getElementById('modalIncidentTitle').textContent = log.incident || 'Incident Snapshot';
     document.getElementById('modalDateTime').textContent = log["Date Time"] || '';
 
-    // Temp Widget
     const temp = parseFloat(log["Temperature (°F)"]) || 0;
     document.getElementById('w_temp').textContent = temp + ' °F';
     document.getElementById('w_tempSub').textContent = 'Heat Index: ' + (log["Heat Index (°F)"] || 'N/A') + ' °F';
     document.getElementById('w_tempBar').style.width = Math.min(100, Math.max(0, (temp / 120) * 100)) + '%';
 
-    // RH Widget
     const rh = parseFloat(log["Relative Humidity (%)"]) || 0;
     document.getElementById('w_rh').textContent = rh + ' %';
     document.getElementById('w_rhSub').textContent = 'Dew Point: ' + (log["Dew Point (°F)"] || 'N/A') + ' °F';
     document.getElementById('w_rhBar').style.width = Math.min(100, Math.max(0, rh)) + '%';
 
-    // Wind Widget
     const wind = parseFloat(log["Wind Speed (mph)"]) || 0;
     document.getElementById('w_wind').textContent = wind + ' mph';
     document.getElementById('w_windSub').textContent = 'Cross: ' + (log["Crosswind (mph)"] || 0) + ' | Head: ' + (log["Headwind (mph)"] || 0);
     document.getElementById('w_windBar').style.width = Math.min(100, Math.max(0, (wind / 50) * 100)) + '%';
 
-    // Ignition Widget
     const pIgn = parseFloat(log["Probability of Ignition (%)"]) || 0;
     document.getElementById('w_pIgn').textContent = pIgn + ' %';
     document.getElementById('w_pIgnBar').style.width = Math.min(100, Math.max(0, pIgn)) + '%';
@@ -767,7 +759,6 @@
       badge.className = 'hazard-badge hazard-low';
     }
 
-    // Secondary Grid Widgets
     document.getElementById('w_statPress').textContent = (log["Station Pressure (inHg)"] || 'N/A') + ' inHg';
     document.getElementById('w_baroPress').textContent = (log["Barometric Pressure (inHg)"] || 'N/A') + ' inHg';
     document.getElementById('w_alt').textContent = (log["Altitude (ft)"] || 'N/A') + ' ft';
@@ -797,6 +788,7 @@
   }
 
   function getTrendBadge(curr, prev) {
+    if (prev === null || prev === undefined) return '';
     curr = parseFloat(curr);
     prev = parseFloat(prev);
     if (isNaN(curr) || isNaN(prev)) return '';
