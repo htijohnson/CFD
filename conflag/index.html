@@ -119,7 +119,7 @@
       <div class="form-group">
         <label for="incidentSelect">Select Existing Incident or Create New</label>
         <select id="incidentSelect" onchange="toggleNewIncidentInput()">
-          <option value="">-- Loading Incidents... --</option>
+          <option value="" disabled selected>-- Loading Incidents... --</option>
         </select>
       </div>
 
@@ -165,7 +165,6 @@
 </div>
 
 <script>
-  // Target Google Apps Script Web App Endpoint URL
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwNMTaLpjDFh06u3bj0r9jQVVDMJzfYvVzjNRWHDzZDrCClhAmyDCHNr_wKkvlTjb4p/exec";
 
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -184,35 +183,51 @@
         .then(data => renderInitialData(data))
         .catch(err => {
           console.error(err);
-          document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="7">Error loading data.</td></tr>';
+          // Fallback if fetch fails
+          renderInitialData({ incidents: [], logs: [] });
         });
     }
   }
 
   function renderInitialData(data) {
     const select = document.getElementById('incidentSelect');
-    select.innerHTML = '<option value="__NEW__">+ Enter New Incident Name</option>';
-    
-    if (data.incidents && data.incidents.length > 0) {
+    select.innerHTML = '';
+
+    // Always include option to enter a new incident
+    const newOpt = document.createElement('option');
+    newOpt.value = '__NEW__';
+    newOpt.textContent = '+ Enter New Incident Name';
+    select.appendChild(newOpt);
+
+    // Populate existing incidents
+    if (data && data.incidents && data.incidents.length > 0) {
       data.incidents.forEach(inc => {
         const opt = document.createElement('option');
         opt.value = inc;
         opt.textContent = inc;
         select.appendChild(opt);
       });
-      select.selectedIndex = 1;
+      // Default selection to the most recent existing incident
+      select.value = data.incidents[0];
     } else {
-      toggleNewIncidentInput();
+      select.value = '__NEW__';
     }
 
-    logsData = data.logs || [];
+    toggleNewIncidentInput();
+
+    logsData = (data && data.logs) ? data.logs : [];
     renderLogsTable();
   }
 
   function toggleNewIncidentInput() {
     const select = document.getElementById('incidentSelect');
     const newGroup = document.getElementById('newIncidentGroup');
-    newGroup.style.display = select.value === '__NEW__' ? 'block' : 'none';
+    if (select.value === '__NEW__') {
+      newGroup.style.display = 'block';
+      document.getElementById('newIncidentName').focus();
+    } else {
+      newGroup.style.display = 'none';
+    }
   }
 
   async function handleUpload() {
@@ -225,7 +240,7 @@
 
     if (!incidentName || !fileInput.files.length) {
       status.style.color = '#dc2626';
-      status.textContent = 'Please select an incident and PDF file.';
+      status.textContent = 'Please select or enter an incident name and choose a PDF file.';
       return;
     }
 
@@ -270,7 +285,7 @@
       stats.lng = coordMatch[2];
     }
 
-    status.textContent = 'Uploading PDF to Drive...';
+    status.textContent = 'Uploading PDF to Drive & Sending Notification...';
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -302,6 +317,8 @@
   function handleSuccess(res, status) {
     status.style.color = '#16a34a';
     status.textContent = res.message || 'Successfully uploaded and parsed PDF!';
+    document.getElementById('pdfFile').value = '';
+    document.getElementById('newIncidentName').value = '';
     loadInitialData();
   }
 
