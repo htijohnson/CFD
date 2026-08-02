@@ -2,7 +2,6 @@
 <html>
 <head>
   <base target="_top">
-  <!-- PDF.js library for client-side text extraction -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <style>
     :root {
@@ -21,10 +20,10 @@
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 24px;
+      padding: 20px;
     }
 
-    .container { max-width: 1100px; margin: 0 auto; }
+    .container { max-width: 1400px; margin: 0 auto; }
 
     .card {
       background: var(--card-bg);
@@ -35,74 +34,92 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    .form-group { margin-bottom: 16px; }
-
-    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 6px; }
-
-    select, input[type="text"], input[type="file"] {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 0.95rem;
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
-    button {
-      background-color: var(--primary);
-      color: white;
+    .tab-btn {
+      background-color: #e2e8f0;
+      color: var(--text);
       border: none;
-      padding: 12px 20px;
+      padding: 10px 18px;
       border-radius: 6px;
-      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
     }
 
-    button:hover { opacity: 0.9; }
+    .tab-btn.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+
+    select, input[type="text"], input[type="number"], input[type="file"], input[type="datetime-local"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.9rem;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+    button.submit-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    button.submit-btn:hover { opacity: 0.9; }
 
     .trend-up { color: var(--up-red); font-weight: bold; }
     .trend-down { color: var(--down-green); font-weight: bold; }
     .trend-flat { color: var(--text-muted); }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 12px;
+    }
 
-    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
 
-    th { background-color: #f1f5f9; font-weight: 600; }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
 
     .action-link { color: var(--primary); text-decoration: none; font-weight: 600; margin-right: 8px; }
     .action-link:hover { text-decoration: underline; }
-
-    .toggle-btn {
-      background: #e2e8f0;
-      color: var(--text);
-      padding: 4px 10px;
-      font-size: 0.8rem;
-      border-radius: 4px;
-      cursor: pointer;
-      border: none;
-    }
-
-    .details-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 12px;
-      padding: 16px;
-      background-color: #f8fafc;
-      border-radius: 6px;
-      margin: 8px 0;
-    }
-
-    .metric-card {
-      background: white;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-    }
-
-    .metric-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-    .metric-value { font-size: 1rem; font-weight: 700; margin-top: 4px; }
 
     #status { margin-top: 12px; font-weight: 600; }
   </style>
@@ -110,57 +127,195 @@
 <body>
 
 <div class="container">
-  <h2>Incident PDF Log & Complete Hazard Tracker</h2>
+  <h2>Incident Weather & Hazard Tracker</h2>
 
-  <!-- Upload Form -->
+  <!-- Mode Selector Tabs -->
+  <div class="tab-buttons">
+    <button class="tab-btn active" id="tabPdf" onclick="switchMode('pdf')">📄 Upload PDF Snapshot</button>
+    <button class="tab-btn" id="tabManual" onclick="switchMode('manual')">✍️ Manual Data Entry</button>
+  </div>
+
+  <!-- Upload / Form Card -->
   <div class="card">
-    <h3>Upload Kestrel PDF Snapshot</h3>
-    <form id="uploadForm">
+    <div class="grid-2">
       <div class="form-group">
-        <label for="incidentSelect">Select Existing Incident or Create New</label>
+        <label for="incidentSelect">Existing Incidents</label>
         <select id="incidentSelect" onchange="toggleNewIncidentInput()">
-          <option value="" disabled selected>-- Loading Incidents... --</option>
+          <option value="" disabled selected>-- Loading Existing Incidents... --</option>
         </select>
       </div>
 
       <div class="form-group" id="newIncidentGroup" style="display: none;">
-        <label for="newIncidentName">New Incident Name</label>
-        <input type="text" id="newIncidentName" placeholder="e.g. C114 Holmes">
+        <label for="newIncidentName">Enter New Incident</label>
+        <input type="text" id="newIncidentName" placeholder="Enter New Incident">
       </div>
+    </div>
 
+    <!-- PDF Upload Mode -->
+    <div id="pdfUploadSection">
       <div class="form-group">
-        <label for="pdfFile">Select PDF File</label>
-        <input type="file" id="pdfFile" accept="application/pdf" required>
+        <label for="pdfFile">Select Kestrel PDF File</label>
+        <input type="file" id="pdfFile" accept="application/pdf">
+      </div>
+      <button type="button" class="submit-btn" onclick="handlePdfUpload()">Upload PDF & Extract All Rows</button>
+    </div>
+
+    <!-- Manual Data Entry Mode -->
+    <div id="manualEntrySection" style="display: none;">
+      <h4>Enter Snapshot Values</h4>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Date / Time</label>
+          <input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 12:00:40">
+        </div>
+        <div class="form-group">
+          <label>Temperature (°F)</label>
+          <input type="number" step="0.1" id="m_temp">
+        </div>
+        <div class="form-group">
+          <label>Relative Humidity (%)</label>
+          <input type="number" step="0.1" id="m_rh">
+        </div>
+        <div class="form-group">
+          <label>Wind Speed (mph)</label>
+          <input type="number" step="0.1" id="m_windSpeed">
+        </div>
       </div>
 
-      <button type="button" onclick="handleUpload()">Upload PDF & Extract All Rows</button>
-      <div id="status"></div>
-    </form>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Probability of Ignition (%)</label>
+          <input type="number" step="0.1" id="m_probIgnition">
+        </div>
+        <div class="form-group">
+          <label>Heat Index (°F)</label>
+          <input type="number" step="0.1" id="m_heatIndex">
+        </div>
+        <div class="form-group">
+          <label>Dew Point (°F)</label>
+          <input type="number" step="0.1" id="m_dewPoint">
+        </div>
+        <div class="form-group">
+          <label>Wet Bulb Temp (°F)</label>
+          <input type="number" step="0.1" id="m_wetBulb">
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Wind Chill (°F)</label>
+          <input type="number" step="0.1" id="m_windChill">
+        </div>
+        <div class="form-group">
+          <label>Station Pressure (inHg)</label>
+          <input type="number" step="0.01" id="m_stationPressure">
+        </div>
+        <div class="form-group">
+          <label>Barometric Pressure (inHg)</label>
+          <input type="number" step="0.01" id="m_baroPressure">
+        </div>
+        <div class="form-group">
+          <label>Altitude (ft)</label>
+          <input type="number" id="m_altitude">
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Density Altitude (ft)</label>
+          <input type="number" id="m_densityAltitude">
+        </div>
+        <div class="form-group">
+          <label>Compass Mag (Deg)</label>
+          <input type="number" id="m_compassMag">
+        </div>
+        <div class="form-group">
+          <label>Compass True (Deg)</label>
+          <input type="number" id="m_compassTrue">
+        </div>
+        <div class="form-group">
+          <label>Crosswind (mph)</label>
+          <input type="number" step="0.1" id="m_crosswind">
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="form-group">
+          <label>Headwind (mph)</label>
+          <input type="number" step="0.1" id="m_headwind">
+        </div>
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" step="0.000001" id="m_lat" placeholder="e.g. 44.340267">
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" step="0.000001" id="m_lng" placeholder="e.g. -120.722166">
+        </div>
+        <div class="form-group">
+          <label>Device Name</label>
+          <input type="text" id="m_deviceName" placeholder="Device Name">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Location Address</label>
+          <input type="text" id="m_address" placeholder="Location Address">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" id="m_notes" placeholder="Notes">
+        </div>
+      </div>
+
+      <button type="button" class="submit-btn" onclick="handleManualSubmit()">Save Manual Entry</button>
+    </div>
+
+    <div id="status"></div>
   </div>
 
-  <!-- Prior Logs Card -->
+  <!-- Historical Logs Card -->
   <div class="card">
     <h3>Prior Logs & All Extracted PDF Rows</h3>
     <p style="font-size: 0.85rem; color: var(--text-muted);">
-      Click <strong>"▼ View All Rows"</strong> on any entry to see every extracted parameter with its red/green trend (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
+      Data pulled directly from Google Sheets (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>). Scroll horizontally to view all columns.
     </p>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Incident</th>
-          <th>Date / Time</th>
-          <th>Temp (°F)</th>
-          <th>RH (%)</th>
-          <th>Wind (mph)</th>
-          <th>P. Ign (%)</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="logsTableBody">
-        <tr><td colspan="7">Loading logs...</td></tr>
-      </tbody>
-    </table>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Incident</th>
+            <th>Date / Time</th>
+            <th>Temp (°F)</th>
+            <th>Heat Index (°F)</th>
+            <th>RH (%)</th>
+            <th>Wind (mph)</th>
+            <th>Prob. Ignition (%)</th>
+            <th>Dew Point (°F)</th>
+            <th>Wet Bulb (°F)</th>
+            <th>Wind Chill (°F)</th>
+            <th>Station Press. (inHg)</th>
+            <th>Baro. Press. (inHg)</th>
+            <th>Altitude (ft)</th>
+            <th>Density Alt. (ft)</th>
+            <th>Crosswind (mph)</th>
+            <th>Headwind (mph)</th>
+            <th>Compass Mag</th>
+            <th>Compass True</th>
+            <th>Location Address</th>
+            <th>Device Name</th>
+            <th>Model & Serial</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logsTableBody">
+          <tr><td colspan="23">Loading logs from sheet...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -174,6 +329,13 @@
     loadInitialData();
   };
 
+  function switchMode(mode) {
+    document.getElementById('tabPdf').classList.toggle('active', mode === 'pdf');
+    document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
+    document.getElementById('pdfUploadSection').style.display = mode === 'pdf' ? 'block' : 'none';
+    document.getElementById('manualEntrySection').style.display = mode === 'manual' ? 'block' : 'none';
+  }
+
   function loadInitialData() {
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       google.script.run.withSuccessHandler(renderInitialData).getInitialData();
@@ -183,7 +345,6 @@
         .then(data => renderInitialData(data))
         .catch(err => {
           console.error(err);
-          // Fallback if fetch fails
           renderInitialData({ incidents: [], logs: [] });
         });
     }
@@ -193,13 +354,13 @@
     const select = document.getElementById('incidentSelect');
     select.innerHTML = '';
 
-    // Always include option to enter a new incident
+    // Standard option for creating a brand new incident
     const newOpt = document.createElement('option');
     newOpt.value = '__NEW__';
-    newOpt.textContent = '+ Enter New Incident Name';
+    newOpt.textContent = '+ Enter New Incident';
     select.appendChild(newOpt);
 
-    // Populate existing incidents
+    // Populate existing incident sheets directly from Google Sheets
     if (data && data.incidents && data.incidents.length > 0) {
       data.incidents.forEach(inc => {
         const opt = document.createElement('option');
@@ -207,8 +368,7 @@
         opt.textContent = inc;
         select.appendChild(opt);
       });
-      // Default selection to the most recent existing incident
-      select.value = data.incidents[0];
+      select.value = data.incidents[0]; // Default to the first existing incident
     } else {
       select.value = '__NEW__';
     }
@@ -224,28 +384,30 @@
     const newGroup = document.getElementById('newIncidentGroup');
     if (select.value === '__NEW__') {
       newGroup.style.display = 'block';
-      document.getElementById('newIncidentName').focus();
     } else {
       newGroup.style.display = 'none';
     }
   }
 
-  async function handleUpload() {
-    const fileInput = document.getElementById('pdfFile');
+  function getSelectedIncidentName() {
     const select = document.getElementById('incidentSelect');
     const newNameInput = document.getElementById('newIncidentName');
-    const status = document.getElementById('status');
+    return select.value === '__NEW__' ? newNameInput.value.trim() : select.value;
+  }
 
-    let incidentName = select.value === '__NEW__' ? newNameInput.value.trim() : select.value;
+  async function handlePdfUpload() {
+    const fileInput = document.getElementById('pdfFile');
+    const status = document.getElementById('status');
+    const incidentName = getSelectedIncidentName();
 
     if (!incidentName || !fileInput.files.length) {
       status.style.color = '#dc2626';
-      status.textContent = 'Please select or enter an incident name and choose a PDF file.';
+      status.textContent = 'Please select or enter an incident name and select a PDF file.';
       return;
     }
 
     status.style.color = '#2563eb';
-    status.textContent = 'Extracting all PDF data rows...';
+    status.textContent = 'Extracting PDF data rows...';
 
     const file = fileInput.files[0];
     const arrayBuffer = await file.arrayBuffer();
@@ -285,38 +447,97 @@
       stats.lng = coordMatch[2];
     }
 
-    status.textContent = 'Uploading PDF to Drive & Sending Notification...';
+    status.textContent = 'Saving entry to sheet...';
 
     const reader = new FileReader();
     reader.onload = function(e) {
       const payload = {
+        type: 'pdf',
         fileData: e.target.result,
         fileName: file.name,
         incidentName: incidentName,
         stats: stats
       };
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(res => handleSuccess(res, status))
-          .withFailureHandler(err => handleError(err, status))
-          .processPdfUpload(payload.fileData, payload.fileName, payload.incidentName, payload.stats);
-      } else {
-        fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(res => handleSuccess(res, status))
-        .catch(err => handleError(err, status));
-      }
+      sendPayload(payload, status);
     };
     reader.readAsDataURL(file);
   }
 
+  function handleManualSubmit() {
+    const status = document.getElementById('status');
+    const incidentName = getSelectedIncidentName();
+
+    if (!incidentName) {
+      status.style.color = '#dc2626';
+      status.textContent = 'Please select or enter an incident name.';
+      return;
+    }
+
+    const stats = {
+      dateTime: document.getElementById('m_dateTime').value.trim() || new Date().toLocaleString(),
+      temp: document.getElementById('m_temp').value,
+      rh: document.getElementById('m_rh').value,
+      windSpeed: document.getElementById('m_windSpeed').value,
+      probIgnition: document.getElementById('m_probIgnition').value,
+      heatIndex: document.getElementById('m_heatIndex').value,
+      dewPoint: document.getElementById('m_dewPoint').value,
+      wetBulb: document.getElementById('m_wetBulb').value,
+      windChill: document.getElementById('m_windChill').value,
+      stationPressure: document.getElementById('m_stationPressure').value,
+      baroPressure: document.getElementById('m_baroPressure').value,
+      altitude: document.getElementById('m_altitude').value,
+      densityAltitude: document.getElementById('m_densityAltitude').value,
+      compassMag: document.getElementById('m_compassMag').value,
+      compassTrue: document.getElementById('m_compassTrue').value,
+      crosswind: document.getElementById('m_crosswind').value,
+      headwind: document.getElementById('m_headwind').value,
+      lat: document.getElementById('m_lat').value,
+      lng: document.getElementById('m_lng').value,
+      deviceName: document.getElementById('m_deviceName').value,
+      address: document.getElementById('m_address').value,
+      notes: document.getElementById('m_notes').value
+    };
+
+    status.style.color = '#2563eb';
+    status.textContent = 'Saving manual entry...';
+
+    const payload = {
+      type: 'manual',
+      incidentName: incidentName,
+      stats: stats
+    };
+
+    sendPayload(payload, status);
+  }
+
+  function sendPayload(payload, status) {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      if (payload.type === 'manual') {
+        google.script.run
+          .withSuccessHandler(res => handleSuccess(res, status))
+          .withFailureHandler(err => handleError(err, status))
+          .processManualEntry(payload.incidentName, payload.stats);
+      } else {
+        google.script.run
+          .withSuccessHandler(res => handleSuccess(res, status))
+          .withFailureHandler(err => handleError(err, status))
+          .processPdfUpload(payload.fileData, payload.fileName, payload.incidentName, payload.stats);
+      }
+    } else {
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => handleSuccess(res, status))
+      .catch(err => handleError(err, status));
+    }
+  }
+
   function handleSuccess(res, status) {
     status.style.color = '#16a34a';
-    status.textContent = res.message || 'Successfully uploaded and parsed PDF!';
+    status.textContent = res.message || 'Saved successfully!';
     document.getElementById('pdfFile').value = '';
     document.getElementById('newIncidentName').value = '';
     loadInitialData();
@@ -337,78 +558,49 @@
     tbody.innerHTML = '';
 
     if (logsData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7">No PDF entries recorded yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="23">No entries recorded in sheet yet.</td></tr>';
       return;
     }
 
     logsData.forEach((log, index) => {
       const prev = logsData[index + 1] || {};
 
-      const tempTrend = getTrendBadge(log["Temperature (°F)"], prev["Temperature (°F)"]);
-      const rhTrend = getTrendBadge(log["Relative Humidity (%)"], prev["Relative Humidity (%)"]);
-      const windTrend = getTrendBadge(log["Wind Speed (mph)"], prev["Wind Speed (mph)"]);
-      const pIgnTrend = getTrendBadge(log["Probability of Ignition (%)"], prev["Probability of Ignition (%)"]);
-
       const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank">📍 Map</a>` : '';
-      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 View PDF</a>` : '';
+      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 PDF</a>` : '';
 
-      const mainRow = document.createElement('tr');
-      mainRow.innerHTML = `
+      const row = document.createElement('tr');
+      row.innerHTML = `
         <td><strong>${escapeHtml(log.incident)}</strong></td>
         <td>${escapeHtml(log["Date Time"])}</td>
-        <td>${log["Temperature (°F)"] || 0} °F ${tempTrend}</td>
-        <td>${log["Relative Humidity (%)"] || 0} % ${rhTrend}</td>
-        <td>${log["Wind Speed (mph)"] || 0} mph ${windTrend}</td>
-        <td>${log["Probability of Ignition (%)"] || 0} % ${pIgnTrend}</td>
-        <td>
-          ${mapLink} ${pdfLink}
-          <button class="toggle-btn" onclick="toggleDetails(${index})">▼ View All Rows</button>
-        </td>
+        <td>${fmtVal(log["Temperature (°F)"])} ${getTrendBadge(log["Temperature (°F)"], prev["Temperature (°F)"])}</td>
+        <td>${fmtVal(log["Heat Index (°F)"])} ${getTrendBadge(log["Heat Index (°F)"], prev["Heat Index (°F)"])}</td>
+        <td>${fmtVal(log["Relative Humidity (%)"])} ${getTrendBadge(log["Relative Humidity (%)"], prev["Relative Humidity (%)"])}</td>
+        <td>${fmtVal(log["Wind Speed (mph)"])} ${getTrendBadge(log["Wind Speed (mph)"], prev["Wind Speed (mph)"])}</td>
+        <td>${fmtVal(log["Probability of Ignition (%)"])} ${getTrendBadge(log["Probability of Ignition (%)"], prev["Probability of Ignition (%)"])}</td>
+        <td>${fmtVal(log["Dew Point (°F)"])} ${getTrendBadge(log["Dew Point (°F)"], prev["Dew Point (°F)"])}</td>
+        <td>${fmtVal(log["Wet Bulb Temp (°F)"])} ${getTrendBadge(log["Wet Bulb Temp (°F)"], prev["Wet Bulb Temp (°F)"])}</td>
+        <td>${fmtVal(log["Wind Chill (°F)"])} ${getTrendBadge(log["Wind Chill (°F)"], prev["Wind Chill (°F)"])}</td>
+        <td>${fmtVal(log["Station Pressure (inHg)"])} ${getTrendBadge(log["Station Pressure (inHg)"], prev["Station Pressure (inHg)"])}</td>
+        <td>${fmtVal(log["Barometric Pressure (inHg)"])} ${getTrendBadge(log["Barometric Pressure (inHg)"], prev["Barometric Pressure (inHg)"])}</td>
+        <td>${fmtVal(log["Altitude (ft)"])} ${getTrendBadge(log["Altitude (ft)"], prev["Altitude (ft)"])}</td>
+        <td>${fmtVal(log["Density Altitude (ft)"])} ${getTrendBadge(log["Density Altitude (ft)"], prev["Density Altitude (ft)"])}</td>
+        <td>${fmtVal(log["Crosswind (mph)"])} ${getTrendBadge(log["Crosswind (mph)"], prev["Crosswind (mph)"])}</td>
+        <td>${fmtVal(log["Headwind (mph)"])} ${getTrendBadge(log["Headwind (mph)"], prev["Headwind (mph)"])}</td>
+        <td>${fmtVal(log["Compass Mag Direction (Deg)"])} ${getTrendBadge(log["Compass Mag Direction (Deg)"], prev["Compass Mag Direction (Deg)"])}</td>
+        <td>${fmtVal(log["Compass True Direction (Deg)"])} ${getTrendBadge(log["Compass True Direction (Deg)"], prev["Compass True Direction (Deg)"])}</td>
+        <td>${escapeHtml(log["Location Address"] || '')}</td>
+        <td>${escapeHtml(log["Device Name"] || '')}</td>
+        <td>${escapeHtml(log["Device Model & Serial"] || '')}</td>
+        <td>${escapeHtml(log["Notes"] || '')}</td>
+        <td>${mapLink} ${pdfLink}</td>
       `;
 
-      const detailsRow = document.createElement('tr');
-      detailsRow.id = `details-${index}`;
-      detailsRow.style.display = 'none';
-
-      const metrics = [
-        { name: 'Heat Index', val: log["Heat Index (°F)"], pVal: prev["Heat Index (°F)"], unit: '°F' },
-        { name: 'Dew Point', val: log["Dew Point (°F)"], pVal: prev["Dew Point (°F)"], unit: '°F' },
-        { name: 'Wet Bulb Temp', val: log["Wet Bulb Temp (°F)"], pVal: prev["Wet Bulb Temp (°F)"], unit: '°F' },
-        { name: 'Wind Chill', val: log["Wind Chill (°F)"], pVal: prev["Wind Chill (°F)"], unit: '°F' },
-        { name: 'Station Pressure', val: log["Station Pressure (inHg)"], pVal: prev["Station Pressure (inHg)"], unit: 'inHg' },
-        { name: 'Barometric Pressure', val: log["Barometric Pressure (inHg)"], pVal: prev["Barometric Pressure (inHg)"], unit: 'inHg' },
-        { name: 'Altitude', val: log["Altitude (ft)"], pVal: prev["Altitude (ft)"], unit: 'ft' },
-        { name: 'Density Altitude', val: log["Density Altitude (ft)"], pVal: prev["Density Altitude (ft)"], unit: 'ft' },
-        { name: 'Compass Magnetic', val: log["Compass Mag Direction (Deg)"], pVal: prev["Compass Mag Direction (Deg)"], unit: 'Deg' },
-        { name: 'Compass True', val: log["Compass True Direction (Deg)"], pVal: prev["Compass True Direction (Deg)"], unit: 'Deg' },
-        { name: 'Crosswind', val: log["Crosswind (mph)"], pVal: prev["Crosswind (mph)"], unit: 'mph' },
-        { name: 'Headwind', val: log["Headwind (mph)"], pVal: prev["Headwind (mph)"], unit: 'mph' }
-      ];
-
-      let gridHtml = `<div class="details-grid">`;
-      gridHtml += `<div class="metric-card"><div class="metric-label">Address</div><div class="metric-value" style="font-size:0.8rem">${escapeHtml(log["Location Address"] || 'N/A')}</div></div>`;
-      gridHtml += `<div class="metric-card"><div class="metric-label">Device Info</div><div class="metric-value" style="font-size:0.8rem">${escapeHtml(log["Device Name"] || '')} (${escapeHtml(log["Device Model & Serial"] || '')})</div></div>`;
-
-      metrics.forEach(m => {
-        const trend = getTrendBadge(m.val, m.pVal);
-        gridHtml += `
-          <div class="metric-card">
-            <div class="metric-label">${m.name}</div>
-            <div class="metric-value">${m.val !== undefined ? m.val : 'N/A'} ${m.unit} ${trend}</div>
-          </div>`;
-      });
-      gridHtml += `</div>`;
-
-      detailsRow.innerHTML = `<td colspan="7">${gridHtml}</td>`;
-
-      tbody.appendChild(mainRow);
-      tbody.appendChild(detailsRow);
+      tbody.appendChild(row);
     });
   }
 
-  function toggleDetails(idx) {
-    const row = document.getElementById(`details-${idx}`);
-    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  function fmtVal(v) {
+    return (v !== undefined && v !== null && v !== "") ? v : '-';
   }
 
   function getTrendBadge(curr, prev) {
