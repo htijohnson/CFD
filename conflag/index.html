@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <!-- PDF.js library for client-side text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --primary: #2563eb;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --up-red: #dc2626;
+      --down-green: #16a34a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 6px; }
+
+    select, input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover { opacity: 0.9; }
+
+    .trend-up { color: var(--up-red); font-weight: bold; }
+    .trend-down { color: var(--down-green); font-weight: bold; }
+    .trend-flat { color: var(--text-muted); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+
+    th { background-color: #f1f5f9; font-weight: 600; }
+
+    .action-link { color: var(--primary); text-decoration: none; font-weight: 600; margin-right: 8px; }
+    .action-link:hover { text-decoration: underline; }
+
+    .toggle-btn {
+      background: #e2e8f0;
+      color: var(--text);
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      background-color: #f8fafc;
+      border-radius: 6px;
+      margin: 8px 0;
+    }
+
+    .metric-card {
+      background: white;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .metric-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+    .metric-value { font-size: 1rem; font-weight: 700; margin-top: 4px; }
+
+    #status { margin-top: 12px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Incident PDF Log & Complete Hazard Tracker</h2>
+
+  <!-- Upload Form -->
+  <div class="card">
+    <h3>Upload Kestrel PDF Snapshot</h3>
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="incidentSelect">Select Existing Incident or Create New</label>
+        <select id="incidentSelect" onchange="toggleNewIncidentInput()">
+          <option value="">-- Loading Incidents... --</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="newIncidentGroup" style="display: none;">
+        <label for="newIncidentName">New Incident Name</label>
+        <input type="text" id="newIncidentName" placeholder="e.g. C114 Holmes">
+      </div>
+
+      <div class="form-group">
+        <label for="pdfFile">Select PDF File</label>
+        <input type="file" id="pdfFile" accept="application/pdf" required>
+      </div>
+
+      <button type="button" onclick="handleUpload()">Upload PDF & Extract All Rows</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <!-- Prior Logs Card -->
+  <div class="card">
+    <h3>Prior Logs & All Extracted PDF Rows</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Click <strong>"▼ View All Rows"</strong> on any entry to see every extracted parameter with its red/green trend (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>).
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Incident</th>
+          <th>Date / Time</th>
+          <th>Temp (°F)</th>
+          <th>RH (%)</th>
+          <th>Wind (mph)</th>
+          <th>P. Ign (%)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="logsTableBody">
+        <tr><td colspan="7">Loading logs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Target Google Apps Script Web App Endpoint URL
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwNMTaLpjDFh06u3bj0r9jQVVDMJzfYvVzjNRWHDzZDrCClhAmyDCHNr_wKkvlTjb4p/exec";
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  let logsData = [];
+
+  window.onload = function() {
+    loadInitialData();
+  };
+
+  function loadInitialData() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(renderInitialData).getInitialData();
+    } else {
+      fetch(SCRIPT_URL + '?action=getInitialData')
+        .then(res => res.json())
+        .then(data => renderInitialData(data))
+        .catch(err => {
+          console.error(err);
+          document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="7">Error loading data.</td></tr>';
+        });
+    }
+  }
+
+  function renderInitialData(data) {
+    const select = document.getElementById('incidentSelect');
+    select.innerHTML = '<option value="__NEW__">+ Enter New Incident Name</option>';
+    
+    if (data.incidents && data.incidents.length > 0) {
+      data.incidents.forEach(inc => {
+        const opt = document.createElement('option');
+        opt.value = inc;
+        opt.textContent = inc;
+        select.appendChild(opt);
+      });
+      select.selectedIndex = 1;
+    } else {
+      toggleNewIncidentInput();
+    }
+
+    logsData = data.logs || [];
+    renderLogsTable();
+  }
+
+  function toggleNewIncidentInput() {
+    const select = document.getElementById('incidentSelect');
+    const newGroup = document.getElementById('newIncidentGroup');
+    newGroup.style.display = select.value === '__NEW__' ? 'block' : 'none';
+  }
+
+  async function handleUpload() {
+    const fileInput = document.getElementById('pdfFile');
+    const select = document.getElementById('incidentSelect');
+    const newNameInput = document.getElementById('newIncidentName');
+    const status = document.getElementById('status');
+
+    let incidentName = select.value === '__NEW__' ? newNameInput.value.trim() : select.value;
+
+    if (!incidentName || !fileInput.files.length) {
+      status.style.color = '#dc2626';
+      status.textContent = 'Please select an incident and PDF file.';
+      return;
+    }
+
+    status.style.color = '#2563eb';
+    status.textContent = 'Extracting all PDF data rows...';
+
+    const file = fileInput.files[0];
+    const arrayBuffer = await file.arrayBuffer();
+    
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const textContent = await page.getTextContent();
+    const txt = textContent.items.map(item => item.str).join(' ');
+
+    const stats = {
+      deviceName: extractVal(txt, /Device Name\s*([^\n]+?)(?=Device Model|$)/) || extractVal(txt, /Device Name\s*([A-Za-z0-9\s-]+)/),
+      deviceModelSerial: extractVal(txt, /Device Model and Serial Number\s*([^\n]+?)(?=Snapshot Name|$)/),
+      dateTime: extractVal(txt, /Time\s*([A-Za-z]+\s*\d{1,2},\s*\d{4}\s*\/\s*\d{2}:\d{2}:\d{2})/) || new Date().toLocaleString(),
+      address: extractVal(txt, /Location Address\s*([0-9A-Za-z\s,.-]+?)(?=Location Coordinates|$)/),
+      temp: parseFloat(extractVal(txt, /Temperature\s*°F\s*([\d.-]+)/)) || 0,
+      heatIndex: parseFloat(extractVal(txt, /Heat Index\s*°F\s*([\d.-]+)/)) || 0,
+      rh: parseFloat(extractVal(txt, /Relative Humidity\s*%\s*([\d.-]+)/)) || 0,
+      windSpeed: parseFloat(extractVal(txt, /Wind Speed\s*mph\s*([\d.-]+)/)) || 0,
+      stationPressure: parseFloat(extractVal(txt, /Station Pressure\s*inHg\s*([\d.-]+)/)) || 0,
+      dewPoint: parseFloat(extractVal(txt, /Dew Point\s*°F\s*([\d.-]+)/)) || 0,
+      altitude: parseFloat(extractVal(txt, /Altitude\s*ft\s*([\d.-]+)/)) || 0,
+      densityAltitude: parseFloat(extractVal(txt, /Density Altitude\s*ft\s*([\d.-]+)/)) || 0,
+      baroPressure: parseFloat(extractVal(txt, /Barometric Pressure\s*inHg\s*([\d.-]+)/)) || 0,
+      compassMag: parseFloat(extractVal(txt, /Compass Magnetic Direction\s*Deg\s*([\d.-]+)/)) || 0,
+      compassTrue: parseFloat(extractVal(txt, /Compass True Direction\s*Deg\s*([\d.-]+)/)) || 0,
+      crosswind: parseFloat(extractVal(txt, /Crosswind\s*mph\s*([\d.-]+)/)) || 0,
+      headwind: parseFloat(extractVal(txt, /Headwind\s*mph\s*([\d.-]+)/)) || 0,
+      windChill: parseFloat(extractVal(txt, /Wind Chill\s*°F\s*([\d.-]+)/)) || 0,
+      wetBulb: parseFloat(extractVal(txt, /Wet Bulb Temp\s*°F\s*([\d.-]+)/)) || 0,
+      probIgnition: parseFloat(extractVal(txt, /Probability of Ignition\s*%\s*([\d.-]+)/)) || 0,
+      notes: extractVal(txt, /Notes\s*([^\n]+?)(?=Snapshot Statistics|$)/) || ""
+    };
+
+    const coordMatch = txt.match(/\(([\d.-]+),\s*([\d.-]+)\)/);
+    if (coordMatch) {
+      stats.lat = coordMatch[1];
+      stats.lng = coordMatch[2];
+    }
+
+    status.textContent = 'Uploading PDF to Drive...';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const payload = {
+        fileData: e.target.result,
+        fileName: file.name,
+        incidentName: incidentName,
+        stats: stats
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(res => handleSuccess(res, status))
+          .withFailureHandler(err => handleError(err, status))
+          .processPdfUpload(payload.fileData, payload.fileName, payload.incidentName, payload.stats);
+      } else {
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => handleSuccess(res, status))
+        .catch(err => handleError(err, status));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleSuccess(res, status) {
+    status.style.color = '#16a34a';
+    status.textContent = res.message || 'Successfully uploaded and parsed PDF!';
+    loadInitialData();
+  }
+
+  function handleError(err, status) {
+    status.style.color = '#dc2626';
+    status.textContent = 'Error: ' + (err.message || err);
+  }
+
+  function extractVal(txt, regex) {
+    const m = txt.match(regex);
+    return m ? m[1].trim() : null;
+  }
+
+  function renderLogsTable() {
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = '';
+
+    if (logsData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7">No PDF entries recorded yet.</td></tr>';
+      return;
+    }
+
+    logsData.forEach((log, index) => {
+      const prev = logsData[index + 1] || {};
+
+      const tempTrend = getTrendBadge(log["Temperature (°F)"], prev["Temperature (°F)"]);
+      const rhTrend = getTrendBadge(log["Relative Humidity (%)"], prev["Relative Humidity (%)"]);
+      const windTrend = getTrendBadge(log["Wind Speed (mph)"], prev["Wind Speed (mph)"]);
+      const pIgnTrend = getTrendBadge(log["Probability of Ignition (%)"], prev["Probability of Ignition (%)"]);
+
+      const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank">📍 Map</a>` : '';
+      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 View PDF</a>` : '';
+
+      const mainRow = document.createElement('tr');
+      mainRow.innerHTML = `
+        <td><strong>${escapeHtml(log.incident)}</strong></td>
+        <td>${escapeHtml(log["Date Time"])}</td>
+        <td>${log["Temperature (°F)"] || 0} °F ${tempTrend}</td>
+        <td>${log["Relative Humidity (%)"] || 0} % ${rhTrend}</td>
+        <td>${log["Wind Speed (mph)"] || 0} mph ${windTrend}</td>
+        <td>${log["Probability of Ignition (%)"] || 0} % ${pIgnTrend}</td>
+        <td>
+          ${mapLink} ${pdfLink}
+          <button class="toggle-btn" onclick="toggleDetails(${index})">▼ View All Rows</button>
+        </td>
+      `;
+
+      const detailsRow = document.createElement('tr');
+      detailsRow.id = `details-${index}`;
+      detailsRow.style.display = 'none';
+
+      const metrics = [
+        { name: 'Heat Index', val: log["Heat Index (°F)"], pVal: prev["Heat Index (°F)"], unit: '°F' },
+        { name: 'Dew Point', val: log["Dew Point (°F)"], pVal: prev["Dew Point (°F)"], unit: '°F' },
+        { name: 'Wet Bulb Temp', val: log["Wet Bulb Temp (°F)"], pVal: prev["Wet Bulb Temp (°F)"], unit: '°F' },
+        { name: 'Wind Chill', val: log["Wind Chill (°F)"], pVal: prev["Wind Chill (°F)"], unit: '°F' },
+        { name: 'Station Pressure', val: log["Station Pressure (inHg)"], pVal: prev["Station Pressure (inHg)"], unit: 'inHg' },
+        { name: 'Barometric Pressure', val: log["Barometric Pressure (inHg)"], pVal: prev["Barometric Pressure (inHg)"], unit: 'inHg' },
+        { name: 'Altitude', val: log["Altitude (ft)"], pVal: prev["Altitude (ft)"], unit: 'ft' },
+        { name: 'Density Altitude', val: log["Density Altitude (ft)"], pVal: prev["Density Altitude (ft)"], unit: 'ft' },
+        { name: 'Compass Magnetic', val: log["Compass Mag Direction (Deg)"], pVal: prev["Compass Mag Direction (Deg)"], unit: 'Deg' },
+        { name: 'Compass True', val: log["Compass True Direction (Deg)"], pVal: prev["Compass True Direction (Deg)"], unit: 'Deg' },
+        { name: 'Crosswind', val: log["Crosswind (mph)"], pVal: prev["Crosswind (mph)"], unit: 'mph' },
+        { name: 'Headwind', val: log["Headwind (mph)"], pVal: prev["Headwind (mph)"], unit: 'mph' }
+      ];
+
+      let gridHtml = `<div class="details-grid">`;
+      gridHtml += `<div class="metric-card"><div class="metric-label">Address</div><div class="metric-value" style="font-size:0.8rem">${escapeHtml(log["Location Address"] || 'N/A')}</div></div>`;
+      gridHtml += `<div class="metric-card"><div class="metric-label">Device Info</div><div class="metric-value" style="font-size:0.8rem">${escapeHtml(log["Device Name"] || '')} (${escapeHtml(log["Device Model & Serial"] || '')})</div></div>`;
+
+      metrics.forEach(m => {
+        const trend = getTrendBadge(m.val, m.pVal);
+        gridHtml += `
+          <div class="metric-card">
+            <div class="metric-label">${m.name}</div>
+            <div class="metric-value">${m.val !== undefined ? m.val : 'N/A'} ${m.unit} ${trend}</div>
+          </div>`;
+      });
+      gridHtml += `</div>`;
+
+      detailsRow.innerHTML = `<td colspan="7">${gridHtml}</td>`;
+
+      tbody.appendChild(mainRow);
+      tbody.appendChild(detailsRow);
+    });
+  }
+
+  function toggleDetails(idx) {
+    const row = document.getElementById(`details-${idx}`);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  }
+
+  function getTrendBadge(curr, prev) {
+    curr = parseFloat(curr);
+    prev = parseFloat(prev);
+    if (isNaN(curr) || isNaN(prev)) return '';
+    if (curr > prev) return `<span class="trend-up" title="Up from ${prev}">▲</span>`;
+    if (curr < prev) return `<span class="trend-down" title="Down from ${prev}">▼</span>`;
+    return `<span class="trend-flat">▬</span>`;
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+</script>
+
+</body>
+</html>
