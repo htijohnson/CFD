@@ -2,7 +2,9 @@
 <html>
 <head>
   <base target="_top">
+  <!-- PDF.js & Chart.js Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -54,6 +56,19 @@
       background-color: var(--primary);
       color: white;
     }
+
+    .graph-btn {
+      background-color: #059669;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: auto;
+    }
+
+    .graph-btn:hover { background-color: #047857; }
 
     .form-group { margin-bottom: 16px; }
 
@@ -126,7 +141,7 @@
 
     #status { margin-top: 12px; font-weight: 600; }
 
-    /* Modal Widget Dashboard Styles */
+    /* Modal Styling */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -228,6 +243,13 @@
     .hazard-high { background: #fee2e2; color: #991b1b; }
     .hazard-med { background: #fef3c7; color: #92400e; }
     .hazard-low { background: #dcfce7; color: #166534; }
+
+    .chart-container {
+      position: relative;
+      height: 280px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -235,10 +257,11 @@
 <div class="container">
   <h2>Incident Weather & Hazard Tracker</h2>
 
-  <!-- Mode Selector Tabs -->
+  <!-- Mode Selector Tabs & Trend Charts Button -->
   <div class="tab-buttons">
     <button class="tab-btn active" id="tabPdf" onclick="switchMode('pdf')">📄 Upload PDF Snapshot</button>
     <button class="tab-btn" id="tabManual" onclick="switchMode('manual')">✍️ Manual Data Entry</button>
+    <button class="graph-btn" onclick="openGraphModal()">📊 View Incident Trend Graphs</button>
   </div>
 
   <!-- Upload / Form Card -->
@@ -359,7 +382,7 @@
   </div>
 </div>
 
-<!-- WEATHER WIDGET MODAL -->
+<!-- SINGLE ENTRY WIDGET MODAL -->
 <div class="modal-overlay" id="widgetModal">
   <div class="modal-card">
     <div class="modal-header">
@@ -367,7 +390,7 @@
         <h3 id="modalIncidentTitle" style="margin:0">Incident Weather Dashboard</h3>
         <span id="modalDateTime" style="font-size: 0.85rem; color: var(--text-muted);">Aug 1, 2026</span>
       </div>
-      <button class="close-btn" onclick="closeModal()">✕</button>
+      <button class="close-btn" onclick="closeWidgetModal()">✕</button>
     </div>
 
     <div class="widget-grid">
@@ -437,11 +460,46 @@
   </div>
 </div>
 
+<!-- INCIDENT TREND GRAPHS MODAL -->
+<div class="modal-overlay" id="graphModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0">Incident Trend Graphs</h3>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Select an incident to plot historical trends over time</span>
+      </div>
+      <button class="close-btn" onclick="closeGraphModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label for="graphIncidentSelect">Select Incident to View Trends</label>
+      <select id="graphIncidentSelect" onchange="updateCharts()">
+        <option value="">-- Loading Incidents... --</option>
+      </select>
+    </div>
+
+    <div id="chartContainerArea">
+      <h4>Temperature & Relative Humidity Trend</h4>
+      <div class="chart-container">
+        <canvas id="tempRhChart"></canvas>
+      </div>
+
+      <h4>Wind Speed & Ignition Probability Trend</h4>
+      <div class="chart-container">
+        <canvas id="windIgnChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwNMTaLpjDFh06u3bj0r9jQVVDMJzfYvVzjNRWHDzZDrCClhAmyDCHNr_wKkvlTjb4p/exec";
 
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
   let logsData = [];
+  let existingIncidents = [];
+  let tempRhChartInstance = null;
+  let windIgnChartInstance = null;
 
   window.onload = function() {
     loadInitialData();
@@ -470,23 +528,34 @@
 
   function renderInitialData(data) {
     const select = document.getElementById('incidentSelect');
+    const graphSelect = document.getElementById('graphIncidentSelect');
     select.innerHTML = '';
+    graphSelect.innerHTML = '';
 
     const newOpt = document.createElement('option');
     newOpt.value = '__NEW__';
     newOpt.textContent = '+ Enter New Incident';
     select.appendChild(newOpt);
 
-    if (data && data.incidents && data.incidents.length > 0) {
-      data.incidents.forEach(inc => {
+    existingIncidents = (data && data.incidents) ? data.incidents : [];
+
+    if (existingIncidents.length > 0) {
+      existingIncidents.forEach(inc => {
         const opt = document.createElement('option');
         opt.value = inc;
         opt.textContent = inc;
         select.appendChild(opt);
+
+        const gOpt = document.createElement('option');
+        gOpt.value = inc;
+        gOpt.textContent = inc;
+        graphSelect.appendChild(gOpt);
       });
-      select.value = data.incidents[0];
+      select.value = existingIncidents[0];
+      graphSelect.value = existingIncidents[0];
     } else {
       select.value = '__NEW__';
+      graphSelect.innerHTML = '<option value="">No Incidents Found</option>';
     }
 
     toggleNewIncidentInput();
@@ -675,7 +744,6 @@
     }
 
     logsData.forEach((log, index) => {
-      // Find previous log specifically belonging to the SAME incident
       let prevSameIncident = null;
       for (let i = index + 1; i < logsData.length; i++) {
         if (logsData[i].incident === log.incident) {
@@ -779,8 +847,103 @@
     document.getElementById('widgetModal').style.display = 'flex';
   }
 
-  function closeModal() {
+  function closeWidgetModal() {
     document.getElementById('widgetModal').style.display = 'none';
+  }
+
+  /* --- INCIDENT TREND CHARTS LOGIC --- */
+  function openGraphModal() {
+    document.getElementById('graphModal').style.display = 'flex';
+    updateCharts();
+  }
+
+  function closeGraphModal() {
+    document.getElementById('graphModal').style.display = 'none';
+  }
+
+  function updateCharts() {
+    const selectedIncident = document.getElementById('graphIncidentSelect').value;
+    if (!selectedIncident) return;
+
+    // Filter logs for selected incident and sort chronologically (oldest first for left-to-right graphs)
+    const incidentLogs = logsData
+      .filter(l => l.incident === selectedIncident)
+      .slice()
+      .reverse();
+
+    const labels = incidentLogs.map(l => l["Date Time"]);
+    const temps = incidentLogs.map(l => parseFloat(l["Temperature (°F)"]) || 0);
+    const rhs = incidentLogs.map(l => parseFloat(l["Relative Humidity (%)"]) || 0);
+    const winds = incidentLogs.map(l => parseFloat(l["Wind Speed (mph)"]) || 0);
+    const igns = incidentLogs.map(l => parseFloat(l["Probability of Ignition (%)"]) || 0);
+
+    // Destroy existing chart instances before re-rendering
+    if (tempRhChartInstance) tempRhChartInstance.destroy();
+    if (windIgnChartInstance) windIgnChartInstance.destroy();
+
+    // Chart 1: Temp & RH
+    const ctx1 = document.getElementById('tempRhChart').getContext('2d');
+    tempRhChartInstance = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Temperature (°F)',
+            data: temps,
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Relative Humidity (%)',
+            data: rhs,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+
+    // Chart 2: Wind & Ignition Prob
+    const ctx2 = document.getElementById('windIgnChart').getContext('2d');
+    windIgnChartInstance = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Wind Speed (mph)',
+            data: winds,
+            borderColor: '#059669',
+            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Probability of Ignition (%)',
+            data: igns,
+            borderColor: '#ea580c',
+            backgroundColor: 'rgba(234, 88, 12, 0.1)',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } }
+      }
+    });
   }
 
   function fmtVal(v) {
