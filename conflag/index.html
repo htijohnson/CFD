@@ -649,7 +649,7 @@
     }
 
     status.style.color = '#2563eb';
-    status.textContent = 'Parsing Kestrel CSV structure...';
+    status.textContent = 'Parsing & reformatting Kestrel CSV...';
 
     const file = fileInput.files[0];
 
@@ -691,7 +691,6 @@
         }
 
         const headers = rows[headerRowIdx];
-        // Data row is after units row (headerRowIdx + 2)
         const dataRow = rows[headerRowIdx + 2] || rows[headerRowIdx + 1];
 
         // Helper to match column values by header name
@@ -700,7 +699,7 @@
           return (idx !== -1 && dataRow[idx] !== undefined) ? dataRow[idx].trim() : '';
         };
 
-        // Extract coordinates from Location coordinates URL if present
+        // Extract coordinates from Location coordinates URL
         const mapUrl = getVal('Location coordinates');
         let lat = '', lng = '';
         if (mapUrl) {
@@ -737,21 +736,47 @@
           notes: getVal('Notes') || ""
         };
 
-        status.textContent = 'Saving snapshot entry to sheet...';
+        // 3. GENERATE REFORMATTED STANDARD CSV CONTENT
+        const cleanHeaders = [
+          "Device Name", "Device Model", "Serial Number", "Date Time", 
+          "Temperature (°F)", "Wet Bulb (°F)", "Relative Humidity (%)", 
+          "Barometric Pressure (inHg)", "Altitude (ft)", "Station Pressure (inHg)", 
+          "Wind Speed (mph)", "Heat Index (°F)", "Dew Point (°F)", 
+          "Density Altitude (ft)", "Crosswind (mph)", "Headwind (mph)", 
+          "Compass Mag (Deg)", "Compass True (Deg)", "Wind Chill (°F)", 
+          "Probability of Ignition (%)", "Location Address", "Latitude", "Longitude", "Notes"
+        ];
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const payload = {
-            type: 'csv',
-            fileData: e.target.result,
-            fileName: file.name,
-            incidentName: incidentName,
-            stats: stats
-          };
+        const cleanRowValues = [
+          deviceName, deviceModel, serialNumber, stats.dateTime,
+          stats.temp, stats.wetBulb, stats.rh,
+          stats.baroPressure, stats.altitude, stats.stationPressure,
+          stats.windSpeed, stats.heatIndex, stats.dewPoint,
+          stats.densityAltitude, stats.crosswind, stats.headwind,
+          stats.compassMag, stats.compassTrue, stats.windChill,
+          stats.probIgnition, stats.address, stats.lat, stats.lng, stats.notes
+        ];
 
-          sendPayload(payload, status);
+        // Convert arrays into CSV string using PapaParse
+        const reformattedCsvString = Papa.unparse({
+          fields: cleanHeaders,
+          data: [cleanRowValues]
+        });
+
+        // Convert reformatted CSV text into base64 payload for Google Drive storage
+        const reformattedBase64 = "data:text/csv;base64," + btoa(unescape(encodeURIComponent(reformattedCsvString)));
+
+        status.textContent = 'Saving reformatted snapshot entry to Google Drive & sheet...';
+
+        const payload = {
+          type: 'csv',
+          fileData: reformattedBase64,
+          fileName: file.name.replace(/\.csv$/i, '') + '_standardized.csv',
+          incidentName: incidentName,
+          stats: stats
         };
-        reader.readAsDataURL(file);
+
+        sendPayload(payload, status);
       },
       error: function(err) {
         status.style.color = '#dc2626';
