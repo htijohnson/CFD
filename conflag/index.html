@@ -649,53 +649,92 @@
     }
 
     status.style.color = '#2563eb';
-    status.textContent = 'Parsing CSV file...';
+    status.textContent = 'Parsing Kestrel CSV structure...';
 
     const file = fileInput.files[0];
 
     Papa.parse(file, {
-      header: true,
+      header: false,
       skipEmptyLines: true,
       complete: function(results) {
-        if (!results.data || results.data.length === 0) {
+        const rows = results.data;
+        if (!rows || rows.length < 4) {
           status.style.color = '#dc2626';
-          status.textContent = 'CSV file appears to be empty or formatted incorrectly.';
+          status.textContent = 'Invalid Kestrel CSV format (file too short).';
           return;
         }
 
-        // Search through mapped headers or fallback to index matching
-        const row = results.data[0];
-        const findField = (regex) => {
-          for (let key in row) {
-            if (regex.test(key)) return row[key];
+        // 1. Extract Header Metadata (Rows 1-3)
+        let deviceName = '';
+        let deviceModel = '';
+        let serialNumber = '';
+
+        rows.forEach(r => {
+          if (r[0] === 'Device Name') deviceName = r[1] || '';
+          if (r[0] === 'Device Model') deviceModel = r[1] || '';
+          if (r[0] === 'Serial Number') serialNumber = r[1] || '';
+        });
+
+        // 2. Find row index for data headers (FORMATTED DATE_TIME)
+        let headerRowIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i][0] && rows[i][0].includes('FORMATTED DATE_TIME')) {
+            headerRowIdx = i;
+            break;
           }
-          return '';
+        }
+
+        if (headerRowIdx === -1) {
+          status.style.color = '#dc2626';
+          status.textContent = 'Could not locate "FORMATTED DATE_TIME" row in CSV.';
+          return;
+        }
+
+        const headers = rows[headerRowIdx];
+        // Data row is after units row (headerRowIdx + 2)
+        const dataRow = rows[headerRowIdx + 2] || rows[headerRowIdx + 1];
+
+        // Helper to match column values by header name
+        const getVal = (colName) => {
+          const idx = headers.findIndex(h => h && h.trim().toLowerCase() === colName.toLowerCase());
+          return (idx !== -1 && dataRow[idx] !== undefined) ? dataRow[idx].trim() : '';
         };
 
+        // Extract coordinates from Location coordinates URL if present
+        const mapUrl = getVal('Location coordinates');
+        let lat = '', lng = '';
+        if (mapUrl) {
+          const coordMatch = mapUrl.match(/query=([\d.-]+),([\d.-]+)/);
+          if (coordMatch) {
+            lat = coordMatch[1];
+            lng = coordMatch[2];
+          }
+        }
+
         const stats = {
-          dateTime: findField(/date|time/i) || findField(/formatted timestamp/i) || "Snapshot Date N/A",
-          deviceName: findField(/device name|user/i) || "N/A",
-          deviceModelSerial: findField(/model|serial/i) || "N/A",
-          address: findField(/address|location/i) || "N/A",
-          temp: parseFloat(findField(/temperature/i)) || 0,
-          heatIndex: parseFloat(findField(/heat index/i)) || 0,
-          rh: parseFloat(findField(/relative humidity|rh/i)) || 0,
-          windSpeed: parseFloat(findField(/wind speed/i)) || 0,
-          stationPressure: parseFloat(findField(/station pressure/i)) || 0,
-          dewPoint: parseFloat(findField(/dew point/i)) || 0,
-          altitude: parseFloat(findField(/altitude/i)) || 0,
-          densityAltitude: parseFloat(findField(/density altitude/i)) || 0,
-          baroPressure: parseFloat(findField(/barometric pressure/i)) || 0,
-          compassMag: parseFloat(findField(/compass mag/i)) || 0,
-          compassTrue: parseFloat(findField(/compass true/i)) || 0,
-          crosswind: parseFloat(findField(/crosswind/i)) || 0,
-          headwind: parseFloat(findField(/headwind/i)) || 0,
-          windChill: parseFloat(findField(/wind chill/i)) || 0,
-          wetBulb: parseFloat(findField(/wet bulb/i)) || 0,
-          probIgnition: parseFloat(findField(/ignition/i)) || 0,
-          lat: findField(/latitude|lat/i),
-          lng: findField(/longitude|lng|long/i),
-          notes: findField(/notes|comments/i) || ""
+          dateTime: getVal('FORMATTED DATE_TIME') || "Snapshot Date N/A",
+          deviceName: deviceName || getVal('Device Name') || "N/A",
+          deviceModelSerial: (deviceModel || serialNumber) ? `${deviceModel} (${serialNumber})` : "N/A",
+          address: getVal('Location address') || "N/A",
+          temp: parseFloat(getVal('Temperature')) || 0,
+          heatIndex: parseFloat(getVal('Heat Index')) || 0,
+          rh: parseFloat(getVal('Relative Humidity')) || 0,
+          windSpeed: parseFloat(getVal('Wind Speed')) || 0,
+          stationPressure: parseFloat(getVal('Station Pressure')) || 0,
+          dewPoint: parseFloat(getVal('Dew Point')) || 0,
+          altitude: parseFloat(getVal('Altitude')) || 0,
+          densityAltitude: parseFloat(getVal('Density Altitude')) || 0,
+          baroPressure: parseFloat(getVal('Barometric Pressure')) || 0,
+          compassMag: parseFloat(getVal('Compass Magnetic Direction')) || 0,
+          compassTrue: parseFloat(getVal('Compass True Direction')) || 0,
+          crosswind: parseFloat(getVal('Crosswind')) || 0,
+          headwind: parseFloat(getVal('Headwind')) || 0,
+          windChill: parseFloat(getVal('Wind Chill')) || 0,
+          wetBulb: parseFloat(getVal('Wet Bulb Temp')) || 0,
+          probIgnition: parseFloat(getVal('Probability of Ignition')) || 0,
+          lat: lat,
+          lng: lng,
+          notes: getVal('Notes') || ""
         };
 
         status.textContent = 'Saving snapshot entry to sheet...';
