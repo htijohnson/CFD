@@ -2,8 +2,8 @@
 <html>
 <head>
   <base target="_top">
-  <!-- PDF.js & Chart.js Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <!-- PapaParse & Chart.js Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -253,7 +253,7 @@
   <h2 style="font-size: 1.4rem; margin-top: 0;">Incident Weather & Hazard Tracker</h2>
 
   <div class="tab-buttons">
-    <button class="tab-btn active" id="tabPdf" onclick="switchMode('pdf')">📄 Upload PDF</button>
+    <button class="tab-btn active" id="tabCsv" onclick="switchMode('csv')">📊 Upload CSV</button>
     <button class="tab-btn" id="tabManual" onclick="switchMode('manual')">✍️ Manual Entry</button>
     <button class="graph-btn" onclick="openGraphModal()">📊 Trend Graphs</button>
   </div>
@@ -273,13 +273,13 @@
       </div>
     </div>
 
-    <!-- PDF Upload Section -->
-    <div id="pdfUploadSection">
+    <!-- CSV Upload Section -->
+    <div id="csvUploadSection">
       <div class="form-group">
-        <label for="pdfFile">Select Kestrel PDF File</label>
-        <input type="file" id="pdfFile" accept="application/pdf">
+        <label for="csvFile">Select Kestrel CSV File</label>
+        <input type="file" id="csvFile" accept=".csv">
       </div>
-      <button type="button" class="submit-btn" onclick="handlePdfUpload()">Upload PDF & Extract Rows</button>
+      <button type="button" class="submit-btn" onclick="handleCsvUpload()">Upload CSV & Extract Rows</button>
     </div>
 
     <!-- Manual Data Entry Section -->
@@ -557,7 +557,6 @@
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwNMTaLpjDFh06u3bj0r9jQVVDMJzfYvVzjNRWHDzZDrCClhAmyDCHNr_wKkvlTjb4p/exec";
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
   let logsData = [];
   let existingIncidents = [];
   let tempRhChartInstance = null;
@@ -568,9 +567,9 @@
   };
 
   function switchMode(mode) {
-    document.getElementById('tabPdf').classList.toggle('active', mode === 'pdf');
+    document.getElementById('tabCsv').classList.toggle('active', mode === 'csv');
     document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
-    document.getElementById('pdfUploadSection').style.display = mode === 'pdf' ? 'block' : 'none';
+    document.getElementById('csvUploadSection').style.display = mode === 'csv' ? 'block' : 'none';
     document.getElementById('manualEntrySection').style.display = mode === 'manual' ? 'block' : 'none';
   }
 
@@ -638,76 +637,88 @@
     return select.value === '__NEW__' ? newNameInput.value.trim() : select.value;
   }
 
-  async function handlePdfUpload() {
-    const fileInput = document.getElementById('pdfFile');
+  function handleCsvUpload() {
+    const fileInput = document.getElementById('csvFile');
     const status = document.getElementById('status');
     const incidentName = getSelectedIncidentName();
 
     if (!incidentName || !fileInput.files.length) {
       status.style.color = '#dc2626';
-      status.textContent = 'Please select or enter an incident name and select a PDF file.';
+      status.textContent = 'Please select or enter an incident name and select a CSV file.';
       return;
     }
 
     status.style.color = '#2563eb';
-    status.textContent = 'Extracting PDF data rows...';
+    status.textContent = 'Parsing CSV file...';
 
     const file = fileInput.files[0];
-    const arrayBuffer = await file.arrayBuffer();
-    
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1);
-    const textContent = await page.getTextContent();
-    const txt = textContent.items.map(item => item.str).join(' ');
 
-    const extractedTime = extractVal(txt, /Time\s*([A-Za-z]+\s*\d{1,2},\s*\d{4}\s*\/\s*\d{2}:\d{2}:\d{2})/) || 
-                          extractVal(txt, /Snapshot Name\s*Snapshot\s*-\s*([A-Za-z0-9,\s:]+)/);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        if (!results.data || results.data.length === 0) {
+          status.style.color = '#dc2626';
+          status.textContent = 'CSV file appears to be empty or formatted incorrectly.';
+          return;
+        }
 
-    const stats = {
-      deviceName: extractVal(txt, /Device Name\s*([^\n]+?)(?=Device Model|$)/) || extractVal(txt, /Device Name\s*([A-Za-z0-9\s-]+)/),
-      deviceModelSerial: extractVal(txt, /Device Model and Serial Number\s*([^\n]+?)(?=Snapshot Name|$)/),
-      dateTime: extractedTime || "Snapshot Date N/A",
-      address: extractVal(txt, /Location Address\s*([0-9A-Za-z\s,.-]+?)(?=Location Coordinates|$)/),
-      temp: parseFloat(extractVal(txt, /Temperature\s*°F\s*([\d.-]+)/)) || 0,
-      heatIndex: parseFloat(extractVal(txt, /Heat Index\s*°F\s*([\d.-]+)/)) || 0,
-      rh: parseFloat(extractVal(txt, /Relative Humidity\s*%\s*([\d.-]+)/)) || 0,
-      windSpeed: parseFloat(extractVal(txt, /Wind Speed\s*mph\s*([\d.-]+)/)) || 0,
-      stationPressure: parseFloat(extractVal(txt, /Station Pressure\s*inHg\s*([\d.-]+)/)) || 0,
-      dewPoint: parseFloat(extractVal(txt, /Dew Point\s*°F\s*([\d.-]+)/)) || 0,
-      altitude: parseFloat(extractVal(txt, /Altitude\s*ft\s*([\d.-]+)/)) || 0,
-      densityAltitude: parseFloat(extractVal(txt, /Density Altitude\s*ft\s*([\d.-]+)/)) || 0,
-      baroPressure: parseFloat(extractVal(txt, /Barometric Pressure\s*inHg\s*([\d.-]+)/)) || 0,
-      compassMag: parseFloat(extractVal(txt, /Compass Magnetic Direction\s*Deg\s*([\d.-]+)/)) || 0,
-      compassTrue: parseFloat(extractVal(txt, /Compass True Direction\s*Deg\s*([\d.-]+)/)) || 0,
-      crosswind: parseFloat(extractVal(txt, /Crosswind\s*mph\s*([\d.-]+)/)) || 0,
-      headwind: parseFloat(extractVal(txt, /Headwind\s*mph\s*([\d.-]+)/)) || 0,
-      windChill: parseFloat(extractVal(txt, /Wind Chill\s*°F\s*([\d.-]+)/)) || 0,
-      wetBulb: parseFloat(extractVal(txt, /Wet Bulb Temp\s*°F\s*([\d.-]+)/)) || 0,
-      probIgnition: parseFloat(extractVal(txt, /Probability of Ignition\s*%\s*([\d.-]+)/)) || 0,
-      notes: extractVal(txt, /Notes\s*([^\n]+?)(?=Snapshot Statistics|$)/) || ""
-    };
+        // Search through mapped headers or fallback to index matching
+        const row = results.data[0];
+        const findField = (regex) => {
+          for (let key in row) {
+            if (regex.test(key)) return row[key];
+          }
+          return '';
+        };
 
-    const coordMatch = txt.match(/\(([\d.-]+),\s*([\d.-]+)\)/);
-    if (coordMatch) {
-      stats.lat = coordMatch[1];
-      stats.lng = coordMatch[2];
-    }
+        const stats = {
+          dateTime: findField(/date|time/i) || findField(/formatted timestamp/i) || "Snapshot Date N/A",
+          deviceName: findField(/device name|user/i) || "N/A",
+          deviceModelSerial: findField(/model|serial/i) || "N/A",
+          address: findField(/address|location/i) || "N/A",
+          temp: parseFloat(findField(/temperature/i)) || 0,
+          heatIndex: parseFloat(findField(/heat index/i)) || 0,
+          rh: parseFloat(findField(/relative humidity|rh/i)) || 0,
+          windSpeed: parseFloat(findField(/wind speed/i)) || 0,
+          stationPressure: parseFloat(findField(/station pressure/i)) || 0,
+          dewPoint: parseFloat(findField(/dew point/i)) || 0,
+          altitude: parseFloat(findField(/altitude/i)) || 0,
+          densityAltitude: parseFloat(findField(/density altitude/i)) || 0,
+          baroPressure: parseFloat(findField(/barometric pressure/i)) || 0,
+          compassMag: parseFloat(findField(/compass mag/i)) || 0,
+          compassTrue: parseFloat(findField(/compass true/i)) || 0,
+          crosswind: parseFloat(findField(/crosswind/i)) || 0,
+          headwind: parseFloat(findField(/headwind/i)) || 0,
+          windChill: parseFloat(findField(/wind chill/i)) || 0,
+          wetBulb: parseFloat(findField(/wet bulb/i)) || 0,
+          probIgnition: parseFloat(findField(/ignition/i)) || 0,
+          lat: findField(/latitude|lat/i),
+          lng: findField(/longitude|lng|long/i),
+          notes: findField(/notes|comments/i) || ""
+        };
 
-    status.textContent = 'Saving snapshot entry to sheet...';
+        status.textContent = 'Saving snapshot entry to sheet...';
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const payload = {
-        type: 'pdf',
-        fileData: e.target.result,
-        fileName: file.name,
-        incidentName: incidentName,
-        stats: stats
-      };
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const payload = {
+            type: 'csv',
+            fileData: e.target.result,
+            fileName: file.name,
+            incidentName: incidentName,
+            stats: stats
+          };
 
-      sendPayload(payload, status);
-    };
-    reader.readAsDataURL(file);
+          sendPayload(payload, status);
+        };
+        reader.readAsDataURL(file);
+      },
+      error: function(err) {
+        status.style.color = '#dc2626';
+        status.textContent = 'Error parsing CSV: ' + err.message;
+      }
+    });
   }
 
   function handleManualSubmit() {
@@ -770,7 +781,7 @@
         google.script.run
           .withSuccessHandler(res => handleSuccess(res, status))
           .withFailureHandler(err => handleError(err, status))
-          .processPdfUpload(payload.fileData, payload.fileName, payload.incidentName, payload.stats);
+          .processCsvUpload(payload.fileData, payload.fileName, payload.incidentName, payload.stats);
       }
     } else {
       fetch(SCRIPT_URL, {
@@ -786,7 +797,8 @@
   function handleSuccess(res, status) {
     status.style.color = '#16a34a';
     status.textContent = res.message || 'Saved successfully!';
-    document.getElementById('pdfFile').value = '';
+    const csvInput = document.getElementById('csvFile');
+    if (csvInput) csvInput.value = '';
     document.getElementById('newIncidentName').value = '';
     loadInitialData();
   }
@@ -796,18 +808,10 @@
     status.textContent = 'Error: ' + (err.message || err);
   }
 
-  function extractVal(txt, regex) {
-    const m = txt.match(regex);
-    return m ? m[1].trim() : null;
-  }
-
-  /**
-   * Formats ISO or UTC timestamps into 24-Hour Pacific Time (PDT/PST).
-   */
   function formatPacificTime(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr; // Return raw string if not an ISO format
+    if (isNaN(d.getTime())) return dateStr;
 
     return d.toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
@@ -817,7 +821,7 @@
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false // Force 24-hour military format
+      hour12: false
     }) + ' PDT';
   }
 
@@ -840,7 +844,7 @@
       }
 
       const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank" onclick="event.stopPropagation()">📍 Map</a>` : '';
-      const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank" onclick="event.stopPropagation()">📄 PDF</a>` : '';
+      const csvLink = log["CSV Link"] ? `<a class="action-link" href="${log["CSV Link"]}" target="_blank" onclick="event.stopPropagation()">📊 CSV</a>` : '';
 
       const formattedDateTime = formatPacificTime(log["Date Time"]);
 
@@ -871,7 +875,7 @@
         <td>${escapeHtml(log["Device Name"] || '')}</td>
         <td>${escapeHtml(log["Device Model & Serial"] || '')}</td>
         <td>${escapeHtml(log["Notes"] || '')}</td>
-        <td>${mapLink} ${pdfLink}</td>
+        <td>${mapLink} ${csvLink}</td>
       `;
 
       tbody.appendChild(row);
@@ -930,8 +934,8 @@
     document.getElementById('w_notes').textContent = log["Notes"] || 'None';
 
     const mapLink = log["Map Link"] ? `<a class="action-link" href="${log["Map Link"]}" target="_blank">📍 Open Location Map</a>` : '';
-    const pdfLink = log["PDF Link"] ? `<a class="action-link" href="${log["PDF Link"]}" target="_blank">📄 Open Stored PDF</a>` : '';
-    document.getElementById('w_modalLinks').innerHTML = mapLink + ' ' + pdfLink;
+    const csvLink = log["CSV Link"] ? `<a class="action-link" href="${log["CSV Link"]}" target="_blank">📊 Open Stored CSV</a>` : '';
+    document.getElementById('w_modalLinks').innerHTML = mapLink + ' ' + csvLink;
 
     document.getElementById('widgetModal').style.display = 'flex';
   }
