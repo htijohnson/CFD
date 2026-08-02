@@ -65,7 +65,7 @@
     .form-group { margin-bottom: 14px; }
     label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
 
-    select, input[type="text"], input[type="number"], input[type="file"] {
+    select, input[type="text"], input[type="number"], input[type="file"], input[type="date"], input[type="time"] {
       width: 100%;
       min-height: 44px;
       padding: 10px 12px;
@@ -75,7 +75,7 @@
       background: #fff;
     }
 
-    .grid-1, .grid-2, .grid-3, .grid-4 {
+    .grid-1, .grid-2, .grid-3, .grid-4, .grid-5 {
       display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
@@ -87,11 +87,13 @@
       .grid-2 { grid-template-columns: repeat(2, 1fr); }
       .grid-3 { grid-template-columns: repeat(2, 1fr); }
       .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-5 { grid-template-columns: repeat(2, 1fr); }
     }
 
     @media (min-width: 1024px) {
       .grid-3 { grid-template-columns: repeat(3, 1fr); }
       .grid-4 { grid-template-columns: repeat(4, 1fr); }
+      .grid-5 { grid-template-columns: repeat(5, 1fr); }
     }
 
     button.submit-btn {
@@ -322,10 +324,14 @@
     <div id="manualEntrySection" style="display: none;">
       <h3 style="margin-top:0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Primary Weather Inputs</h3>
       
-      <div class="grid-4">
+      <div class="grid-5">
         <div class="form-group">
-          <label>Snapshot Date / Time</label>
-          <input type="text" id="m_dateTime" placeholder="e.g. Aug 1, 2026 / 12:00:40">
+          <label for="m_date">Snapshot Date</label>
+          <input type="date" id="m_date">
+        </div>
+        <div class="form-group">
+          <label for="m_time">Snapshot Time</label>
+          <input type="time" id="m_time" step="1">
         </div>
         <div class="form-group">
           <label>Temperature (°F)</label>
@@ -599,6 +605,11 @@
   let windIgnChartInstance = null;
 
   window.onload = function() {
+    // Set default date and time to current time
+    const now = new Date();
+    document.getElementById('m_date').value = now.toISOString().substring(0, 10);
+    document.getElementById('m_time').value = now.toTimeString().substring(0, 8);
+    
     loadInitialData();
   };
 
@@ -875,7 +886,16 @@
       return;
     }
 
-    const snapshotTimeInput = document.getElementById('m_dateTime').value.trim() || "Snapshot Time N/A";
+    const dateVal = document.getElementById('m_date').value;
+    const timeVal = document.getElementById('m_time').value;
+
+    if (!dateVal || !timeVal) {
+      status.style.color = '#dc2626';
+      status.textContent = 'Please select both a snapshot Date and Time.';
+      return;
+    }
+
+    const snapshotTimeInput = `${dateVal} ${timeVal}`;
 
     // CHECK FOR DUPLICATE ENTRY BEFORE SAVING
     if (isDuplicateEntry(incidentName, snapshotTimeInput)) {
@@ -949,7 +969,7 @@
   }
 
   function handleSuccess(res, status) {
-    hideOverlay(); // UNDIM SCREEN WHEN COMPLETED
+    hideOverlay();
     status.style.color = '#16a34a';
     status.textContent = res.message || 'Saved successfully!';
     const csvInput = document.getElementById('csvFile');
@@ -959,7 +979,7 @@
   }
 
   function handleError(err, status) {
-    hideOverlay(); // UNDIM SCREEN ON ERROR
+    hideOverlay();
     status.style.color = '#dc2626';
     status.textContent = 'Error: ' + (err.message || err);
   }
