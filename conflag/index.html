@@ -404,7 +404,7 @@
   <div class="card">
     <h3 style="margin-top: 0; font-size: 1.1rem;">Prior Logs & Sheet Data</h3>
     <p style="font-size: 0.8rem; color: var(--text-muted);">
-      💡 Tap any row below to open the <strong>Weather Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>). All times shown in <strong>Pacific Time (PDT)</strong>.
+      💡 Tap any row below to open the <strong>Weather Dashboard</strong> (<span class="trend-up">▲ Red = Up</span>, <span class="trend-down">▼ Green = Down</span>). All times shown in <strong>24-Hour Pacific Time (PDT)</strong>.
     </p>
 
     <div class="table-container">
@@ -412,7 +412,7 @@
         <thead>
           <tr>
             <th>Incident</th>
-            <th>Snapshot Date / Time (Pacific)</th>
+            <th>Snapshot Date / Time (Pacific 24-Hr)</th>
             <th>Temp (°F)</th>
             <th>Heat Index (°F)</th>
             <th>RH (%)</th>
@@ -528,7 +528,7 @@
     <div class="modal-header">
       <div>
         <h3 style="margin:0; font-size: 1.1rem;">Incident Trend Graphs</h3>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">Historical trends over time (Pacific Time)</span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Historical trends over time (Pacific Time 24-Hr)</span>
       </div>
       <button class="close-btn" onclick="closeGraphModal()">✕</button>
     </div>
@@ -802,12 +802,12 @@
   }
 
   /**
-   * Formats ISO or UTC timestamps into Pacific Time (PDT/PST).
+   * Formats ISO or UTC timestamps into 24-Hour Pacific Time (PDT/PST).
    */
   function formatPacificTime(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr; // Return original if not a valid ISO date
+    if (isNaN(d.getTime())) return dateStr; // Return raw string if not an ISO format
 
     return d.toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
@@ -817,7 +817,7 @@
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true
+      hour12: false // Force 24-hour military format
     }) + ' PDT';
   }
 
