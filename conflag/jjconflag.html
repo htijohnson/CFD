@@ -246,13 +246,37 @@
         </div>
     </div>
 
-    <!-- 4. GRAND TOTAL SECTION -->
-    <div class="section-title" style="color: var(--accent-amber);">4. Summary & Grand Total</div>
+    <!-- 4. GRAND TOTAL SUMMARY (SPLIT WAGES VS EQUIPMENT) -->
+    <div class="section-title" style="color: var(--accent-amber);">4. Summary Breakdown (All Periods)</div>
     <div class="grid">
+        <div class="card wages">
+            <span class="card-title">Total Wages (Combined)</span>
+            <span class="card-value" id="summaryWagesTotal">$0.00</span>
+            <span class="card-subtitle">Prior Wages + Current Wages</span>
+            <div class="details-list">
+                <div>Prior Period: <span id="sumPriorWage">$0.00</span></div>
+                <div>Current Period: <span id="sumCurrentWage">$0.00</span></div>
+            </div>
+        </div>
+
+        <div class="card equipment">
+            <span class="card-title">Total Equipment (Combined)</span>
+            <span class="card-value" id="summaryEquipTotal">$0.00</span>
+            <span class="card-subtitle">Prior U917 + Current U917 + TN916</span>
+            <div class="details-list">
+                <div>Prior U917: <span id="sumPriorEquip">$0.00</span></div>
+                <div>Current Equipment: <span id="sumCurrentEquip">$0.00</span></div>
+            </div>
+        </div>
+
         <div class="card total">
-            <span class="card-title">Grand Total (All Periods)</span>
+            <span class="card-title">Grand Total</span>
             <span class="card-value" id="grandTotal">$0.00</span>
-            <span class="card-subtitle">Prior Fixed Costs + Current Live Costs</span>
+            <span class="card-subtitle">All Wages + All Equipment</span>
+            <div class="details-list">
+                <div>Combined Wages: <span id="sumGrandWages">$0.00</span></div>
+                <div>Combined Equipment: <span id="sumGrandEquip">$0.00</span></div>
+            </div>
         </div>
     </div>
 </div>
@@ -264,7 +288,7 @@
     const U917_RATE = 45.00;            // $45.00/hr
     const TN916_RATE = 80.00;           // $80.00/hr
 
-    // Fixed Prior Period Dates: 07/23/2026 15:00 to 08/03/2026 14:00 (Exactly 263 Hours)
+    // Fixed Prior Period Dates: 07/23/2026 15:00 to 08/03/2026 14:00 (263 Hours)
     const PRIOR_START = new Date("2026-07-23T15:00:00");
     const PRIOR_END = new Date("2026-08-03T14:00:00");
     const PRIOR_HOURS = (PRIOR_END - PRIOR_START) / (1000 * 60 * 60); // 263 hrs
@@ -283,8 +307,20 @@
     const u917TotalEl = document.getElementById('u917Total');
     const tn916TotalEl = document.getElementById('tn916Total');
     const equipSubtotalEl = document.getElementById('equipSubtotal');
+
+    // DOM Elements - Summary
+    const summaryWagesTotalEl = document.getElementById('summaryWagesTotal');
+    const summaryEquipTotalEl = document.getElementById('summaryEquipTotal');
     const grandTotalEl = document.getElementById('grandTotal');
 
+    const sumPriorWageEl = document.getElementById('sumPriorWage');
+    const sumCurrentWageEl = document.getElementById('sumCurrentWage');
+    const sumPriorEquipEl = document.getElementById('sumPriorEquip');
+    const sumCurrentEquipEl = document.getElementById('sumCurrentEquip');
+    const sumGrandWagesEl = document.getElementById('sumGrandWages');
+    const sumGrandEquipEl = document.getElementById('sumGrandEquip');
+
+    // Timers
     const wageElapsedEl = document.getElementById('wageElapsed');
     const u917ElapsedEl = document.getElementById('u917Elapsed');
     const tn916ElapsedEl = document.getElementById('tn916Elapsed');
@@ -321,16 +357,29 @@
         const currentTn916Cost = aug7Hours * TN916_RATE;
 
         const currentEquipSubtotal = currentU917Cost + currentTn916Cost;
-        
-        // 3. Grand Total (Prior Fixed Subtotal + Current Live Costs)
-        const grandTotal = priorSubtotalCost + currentWageCost + currentEquipSubtotal;
 
-        // Render Values
+        // 3. Combined Split Summaries
+        const totalWagesCombined = priorWageCost + currentWageCost;
+        const totalEquipCombined = priorU917Cost + currentEquipSubtotal;
+        const grandTotal = totalWagesCombined + totalEquipCombined;
+
+        // Render Current Section Values
         wageTotalEl.textContent = `$${currentWageCost.toFixed(2)}`;
         u917TotalEl.textContent = `$${currentU917Cost.toFixed(2)}`;
         tn916TotalEl.textContent = `$${currentTn916Cost.toFixed(2)}`;
         equipSubtotalEl.textContent = `$${currentEquipSubtotal.toFixed(2)}`;
+
+        // Render Summary Section Values
+        summaryWagesTotalEl.textContent = `$${totalWagesCombined.toFixed(2)}`;
+        summaryEquipTotalEl.textContent = `$${totalEquipCombined.toFixed(2)}`;
         grandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
+
+        sumPriorWageEl.textContent = `$${priorWageCost.toFixed(2)}`;
+        sumCurrentWageEl.textContent = `$${currentWageCost.toFixed(2)}`;
+        sumPriorEquipEl.textContent = `$${priorU917Cost.toFixed(2)}`;
+        sumCurrentEquipEl.textContent = `$${currentEquipSubtotal.toFixed(2)}`;
+        sumGrandWagesEl.textContent = `$${totalWagesCombined.toFixed(2)}`;
+        sumGrandEquipEl.textContent = `$${totalEquipCombined.toFixed(2)}`;
 
         // Render Timers
         const aug8Formatted = formatElapsed(aug8Ms);
