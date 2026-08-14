@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JJjuly23</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .card.wages::before { background-color: var(--accent-green); }
+        .card.equipment::before { background-color: var(--accent-blue); }
+        .card.prior::before { background-color: var(--accent-purple); }
+        .card.total::before { background-color: var(--accent-amber); }
+
+        .card-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .card.wages .card-value { color: var(--accent-green); }
+        .card.equipment .card-value { color: var(--accent-blue); }
+        .card.prior .card-value { color: var(--accent-purple); }
+        .card.total .card-value { color: var(--accent-amber); }
+
+        .card-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 4px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .details-list span {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .badge-fixed {
+            background-color: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Cost & Equipment Tracker</h1>
+        <p>Labor Wages & Equipment Cost Breakdown</p>
+    </div>
+
+    <!-- 1. PRIOR PERIOD SECTION -->
+    <div class="section-title" style="color: var(--accent-purple);">1. Prior Fixed Period (Jul 23 - Aug 3)</div>
+    <div class="grid">
+        <div class="card prior">
+            <span class="card-title">Prior Wage Cost</span>
+            <span class="card-value" id="priorWageTotal">$0.00</span>
+            <span class="card-subtitle">Rate: $52.755/hr <span class="badge badge-fixed">Fixed Period</span></span>
+            <div class="details-list">
+                <div>Period: <span>07/23/26 15:00 - 08/03/26 14:00</span></div>
+                <div>Total Hours: <span>263.00 hrs</span></div>
+            </div>
+        </div>
+
+        <div class="card prior">
+            <span class="card-title">Prior U917 Cost</span>
+            <span class="card-value" id="priorU917Total">$0.00</span>
+            <span class="card-subtitle">Rate: $45.00/hr <span class="badge badge-fixed">Fixed Period</span></span>
+            <div class="details-list">
+                <div>Period: <span>07/23/26 15:00 - 08/03/26 14:00</span></div>
+                <div>Total Hours: <span>263.00 hrs</span></div>
+            </div>
+        </div>
+
+        <div class="card prior">
+            <span class="card-title">Prior Period Subtotal</span>
+            <span class="card-value" id="priorSubtotal">$0.00</span>
+            <span class="card-subtitle">Wages + U917 (263.00 hrs)</span>
+            <div class="details-list">
+                <div>Combined Rate: <span>$97.755/hr</span></div>
+                <div>Status: <span>Complete</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CURRENT LIVE WAGES SECTION -->
+    <div class="section-title" style="color: var(--accent-green);">2. Current Labor Wages (Live)</div>
+    <div class="grid">
+        <div class="card wages">
+            <span class="card-title">Current Wage Cost</span>
+            <span class="card-value" id="wageTotal">$0.00</span>
+            <span class="card-subtitle">Rate: $52.755/hr <span class="badge">1.5x</span></span>
+            <div class="details-list">
+                <div>Base Rate: <span>$35.17/hr</span></div>
+                <div>Started: <span>August 8, 2026 @ 08:00</span></div>
+                <div>Elapsed: <span id="wageElapsed">0h 0m 0s</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CURRENT LIVE EQUIPMENT SECTION -->
+    <div class="section-title" style="color: var(--accent-blue);">3. Current Equipment Costs (Live)</div>
+    <div class="grid">
+        <div class="card equipment">
+            <span class="card-title">U917 Cost (Current)</span>
+            <span class="card-value" id="u917Total">$0.00</span>
+            <span class="card-subtitle">Flat Rate: $45.00/hr</span>
+            <div class="details-list">
+                <div>Started: <span>August 8, 2026 @ 08:00</span></div>
+                <div>Elapsed: <span id="u917Elapsed">0h 0m 0s</span></div>
+            </div>
+        </div>
+
+        <div class="card equipment">
+            <span class="card-title">TN916 Cost</span>
+            <span class="card-value" id="tn916Total">$0.00</span>
+            <span class="card-subtitle">Flat Rate: $80.00/hr</span>
+            <div class="details-list">
+                <div>Started: <span>August 7, 2026 @ 13:00 (1 PM)</span></div>
+                <div>Elapsed: <span id="tn916Elapsed">0h 0m 0s</span></div>
+            </div>
+        </div>
+
+        <div class="card equipment">
+            <span class="card-title">Current Equipment Subtotal</span>
+            <span class="card-value" id="equipSubtotal">$0.00</span>
+            <span class="card-subtitle">Combined Active Equipment</span>
+            <div class="details-list">
+                <div>Units Active: <span>2 Machines</span></div>
+                <div>Combined Rate: <span>$125.00/hr</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. GRAND TOTAL SECTION -->
+    <div class="section-title" style="color: var(--accent-amber);">4. Summary & Grand Total</div>
+    <div class="grid">
+        <div class="card total">
+            <span class="card-title">Grand Total (All Periods)</span>
+            <span class="card-value" id="grandTotal">$0.00</span>
+            <span class="card-subtitle">Prior Fixed Costs + Current Live Costs</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Rates
+    const BASE_WAGE = 35.17;
+    const WAGE_RATE = BASE_WAGE * 1.5; // $52.755/hr
+    const U917_RATE = 45.00;            // $45.00/hr
+    const TN916_RATE = 80.00;           // $80.00/hr
+
+    // Fixed Prior Period Dates: 07/23/2026 15:00 to 08/03/2026 14:00 (Exactly 263 Hours)
+    const PRIOR_START = new Date("2026-07-23T15:00:00");
+    const PRIOR_END = new Date("2026-08-03T14:00:00");
+    const PRIOR_HOURS = (PRIOR_END - PRIOR_START) / (1000 * 60 * 60); // 263 hrs
+
+    // Explicit Live Start Dates
+    const START_AUG8_0800 = new Date("2026-08-08T08:00:00");
+    const START_AUG7_1300 = new Date("2026-08-07T13:00:00");
+
+    // DOM Elements - Prior
+    const priorWageTotalEl = document.getElementById('priorWageTotal');
+    const priorU917TotalEl = document.getElementById('priorU917Total');
+    const priorSubtotalEl = document.getElementById('priorSubtotal');
+
+    // DOM Elements - Current
+    const wageTotalEl = document.getElementById('wageTotal');
+    const u917TotalEl = document.getElementById('u917Total');
+    const tn916TotalEl = document.getElementById('tn916Total');
+    const equipSubtotalEl = document.getElementById('equipSubtotal');
+    const grandTotalEl = document.getElementById('grandTotal');
+
+    const wageElapsedEl = document.getElementById('wageElapsed');
+    const u917ElapsedEl = document.getElementById('u917Elapsed');
+    const tn916ElapsedEl = document.getElementById('tn916Elapsed');
+
+    function formatElapsed(ms) {
+        if (ms < 0) return "Not Started";
+        const seconds = Math.floor((ms / 1000) % 60);
+        const minutes = Math.floor((ms / (1000 * 60)) % 60);
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        return `${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    function calculate() {
+        const now = new Date();
+
+        // 1. Calculate Prior Fixed Period (Static 263 Hours)
+        const priorWageCost = PRIOR_HOURS * WAGE_RATE;
+        const priorU917Cost = PRIOR_HOURS * U917_RATE;
+        const priorSubtotalCost = priorWageCost + priorU917Cost;
+
+        priorWageTotalEl.textContent = `$${priorWageCost.toFixed(2)}`;
+        priorU917TotalEl.textContent = `$${priorU917Cost.toFixed(2)}`;
+        priorSubtotalEl.textContent = `$${priorSubtotalCost.toFixed(2)}`;
+
+        // 2. Calculate Current Live Periods
+        const aug8Ms = Math.max(0, now - START_AUG8_0800);
+        const aug7Ms = Math.max(0, now - START_AUG7_1300);
+
+        const aug8Hours = aug8Ms / (1000 * 60 * 60);
+        const aug7Hours = aug7Ms / (1000 * 60 * 60);
+
+        const currentWageCost = aug8Hours * WAGE_RATE;
+        const currentU917Cost = aug8Hours * U917_RATE;
+        const currentTn916Cost = aug7Hours * TN916_RATE;
+
+        const currentEquipSubtotal = currentU917Cost + currentTn916Cost;
+        
+        // 3. Grand Total (Prior Fixed Subtotal + Current Live Costs)
+        const grandTotal = priorSubtotalCost + currentWageCost + currentEquipSubtotal;
+
+        // Render Values
+        wageTotalEl.textContent = `$${currentWageCost.toFixed(2)}`;
+        u917TotalEl.textContent = `$${currentU917Cost.toFixed(2)}`;
+        tn916TotalEl.textContent = `$${currentTn916Cost.toFixed(2)}`;
+        equipSubtotalEl.textContent = `$${currentEquipSubtotal.toFixed(2)}`;
+        grandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
+
+        // Render Timers
+        const aug8Formatted = formatElapsed(aug8Ms);
+        wageElapsedEl.textContent = aug8Formatted;
+        u917ElapsedEl.textContent = aug8Formatted;
+        tn916ElapsedEl.textContent = formatElapsed(aug7Ms);
+    }
+
+    // Initialize and run real-time update every second
+    calculate();
+    setInterval(calculate, 1000);
+</script>
+
+</body>
+</html>
