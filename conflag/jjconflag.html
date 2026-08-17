@@ -153,14 +153,19 @@
             background-color: rgba(139, 92, 246, 0.2);
             color: var(--accent-purple);
         }
+        
+        .badge-closed {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--accent-amber);
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Cost & Equipment Tracker</h1>
-        <p>Labor Wages & Equipment Cost Breakdown</p>
+        <h1>Cost & Equipment Report</h1>
+        <p>Labor Wages & Equipment Cost Breakdown (Ended 08/16/2026 @ 19:45)</p>
     </div>
 
     <!-- 1. PRIOR PERIOD SECTION -->
@@ -197,30 +202,30 @@
         </div>
     </div>
 
-    <!-- 2. CURRENT LIVE WAGES SECTION -->
-    <div class="section-title" style="color: var(--accent-green);">2. Current Labor Wages (Live)</div>
+    <!-- 2. AUGUST PERIOD LABOR WAGES SECTION -->
+    <div class="section-title" style="color: var(--accent-green);">2. August Labor Wages (Fixed End)</div>
     <div class="grid">
         <div class="card wages">
-            <span class="card-title">Current Wage Cost</span>
+            <span class="card-title">August Wage Cost</span>
             <span class="card-value" id="wageTotal">$0.00</span>
-            <span class="card-subtitle">Rate: $52.755/hr <span class="badge">1.5x</span></span>
+            <span class="card-subtitle">Rate: $52.755/hr <span class="badge badge-closed">Closed @ 19:45</span></span>
             <div class="details-list">
-                <div>Base Rate: <span>$35.17/hr</span></div>
-                <div>Started: <span>August 8, 2026 @ 08:00</span></div>
+                <div>Base Rate: <span>$35.17/hr (1.5x Multiplier)</span></div>
+                <div>Period: <span>08/08/26 08:00 - 08/16/26 19:45</span></div>
                 <div>Elapsed: <span id="wageElapsed">0h 0m 0s</span></div>
             </div>
         </div>
     </div>
 
-    <!-- 3. CURRENT LIVE EQUIPMENT SECTION -->
-    <div class="section-title" style="color: var(--accent-blue);">3. Current Equipment Costs (Live)</div>
+    <!-- 3. AUGUST PERIOD EQUIPMENT SECTION -->
+    <div class="section-title" style="color: var(--accent-blue);">3. August Equipment Costs (Fixed End)</div>
     <div class="grid">
         <div class="card equipment">
-            <span class="card-title">U917 Cost (Current)</span>
+            <span class="card-title">U917 Cost (August)</span>
             <span class="card-value" id="u917Total">$0.00</span>
             <span class="card-subtitle">Flat Rate: $45.00/hr</span>
             <div class="details-list">
-                <div>Started: <span>August 8, 2026 @ 08:00</span></div>
+                <div>Period: <span>08/08/26 08:00 - 08/16/26 19:45</span></div>
                 <div>Elapsed: <span id="u917Elapsed">0h 0m 0s</span></div>
             </div>
         </div>
@@ -230,15 +235,15 @@
             <span class="card-value" id="tn916Total">$0.00</span>
             <span class="card-subtitle">Flat Rate: $80.00/hr</span>
             <div class="details-list">
-                <div>Started: <span>August 7, 2026 @ 13:00 (1 PM)</span></div>
+                <div>Period: <span>08/07/26 13:00 - 08/16/26 19:45</span></div>
                 <div>Elapsed: <span id="tn916Elapsed">0h 0m 0s</span></div>
             </div>
         </div>
 
         <div class="card equipment">
-            <span class="card-title">Current Equipment Subtotal</span>
+            <span class="card-title">August Equipment Subtotal</span>
             <span class="card-value" id="equipSubtotal">$0.00</span>
-            <span class="card-subtitle">Combined Active Equipment</span>
+            <span class="card-subtitle">Combined Equipment Subtotal</span>
             <div class="details-list">
                 <div>Units Active: <span>2 Machines</span></div>
                 <div>Combined Rate: <span>$125.00/hr</span></div>
@@ -247,25 +252,25 @@
     </div>
 
     <!-- 4. GRAND TOTAL SUMMARY (SPLIT WAGES VS EQUIPMENT) -->
-    <div class="section-title" style="color: var(--accent-amber);">4. Summary Breakdown (All Periods)</div>
+    <div class="section-title" style="color: var(--accent-amber);">4. Final Summary Breakdown (All Periods)</div>
     <div class="grid">
         <div class="card wages">
             <span class="card-title">Total Wages (Combined)</span>
             <span class="card-value" id="summaryWagesTotal">$0.00</span>
-            <span class="card-subtitle">Prior Wages + Current Wages</span>
+            <span class="card-subtitle">Prior Wages + August Wages</span>
             <div class="details-list">
                 <div>Prior Period: <span id="sumPriorWage">$0.00</span></div>
-                <div>Current Period: <span id="sumCurrentWage">$0.00</span></div>
+                <div>August Period: <span id="sumCurrentWage">$0.00</span></div>
             </div>
         </div>
 
         <div class="card equipment">
             <span class="card-title">Total Equipment (Combined)</span>
             <span class="card-value" id="summaryEquipTotal">$0.00</span>
-            <span class="card-subtitle">Prior U917 + Current U917 + TN916</span>
+            <span class="card-subtitle">Prior U917 + August U917 + TN916</span>
             <div class="details-list">
                 <div>Prior U917: <span id="sumPriorEquip">$0.00</span></div>
-                <div>Current Equipment: <span id="sumCurrentEquip">$0.00</span></div>
+                <div>August Equipment: <span id="sumCurrentEquip">$0.00</span></div>
             </div>
         </div>
 
@@ -288,12 +293,13 @@
     const U917_RATE = 45.00;            // $45.00/hr
     const TN916_RATE = 80.00;           // $80.00/hr
 
-    // Fixed Prior Period Dates: 07/23/2026 15:00 to 08/03/2026 14:00 (263 Hours)
+    // 1. Fixed Prior Period Dates: 07/23/2026 15:00 to 08/03/2026 14:00 (263 Hours)
     const PRIOR_START = new Date("2026-07-23T15:00:00");
     const PRIOR_END = new Date("2026-08-03T14:00:00");
     const PRIOR_HOURS = (PRIOR_END - PRIOR_START) / (1000 * 60 * 60); // 263 hrs
 
-    // Explicit Live Start Dates
+    // 2. Fixed August Period Dates
+    const AUG_END_TIME = new Date("2026-08-16T19:45:00");
     const START_AUG8_0800 = new Date("2026-08-08T08:00:00");
     const START_AUG7_1300 = new Date("2026-08-07T13:00:00");
 
@@ -302,7 +308,7 @@
     const priorU917TotalEl = document.getElementById('priorU917Total');
     const priorSubtotalEl = document.getElementById('priorSubtotal');
 
-    // DOM Elements - Current
+    // DOM Elements - August
     const wageTotalEl = document.getElementById('wageTotal');
     const u917TotalEl = document.getElementById('u917Total');
     const tn916TotalEl = document.getElementById('tn916Total');
@@ -334,9 +340,9 @@
     }
 
     function calculate() {
-        const now = new Date();
+        const endTime = AUG_END_TIME;
 
-        // 1. Calculate Prior Fixed Period (Static 263 Hours)
+        // 1. Prior Fixed Period (263 Hours)
         const priorWageCost = PRIOR_HOURS * WAGE_RATE;
         const priorU917Cost = PRIOR_HOURS * U917_RATE;
         const priorSubtotalCost = priorWageCost + priorU917Cost;
@@ -345,12 +351,12 @@
         priorU917TotalEl.textContent = `$${priorU917Cost.toFixed(2)}`;
         priorSubtotalEl.textContent = `$${priorSubtotalCost.toFixed(2)}`;
 
-        // 2. Calculate Current Live Periods
-        const aug8Ms = Math.max(0, now - START_AUG8_0800);
-        const aug7Ms = Math.max(0, now - START_AUG7_1300);
+        // 2. August Period (Closed at 08/16/2026 19:45)
+        const aug8Ms = Math.max(0, endTime - START_AUG8_0800);
+        const aug7Ms = Math.max(0, endTime - START_AUG7_1300);
 
-        const aug8Hours = aug8Ms / (1000 * 60 * 60);
-        const aug7Hours = aug7Ms / (1000 * 60 * 60);
+        const aug8Hours = aug8Ms / (1000 * 60 * 60); // 203.75 hours
+        const aug7Hours = aug7Ms / (1000 * 60 * 60); // 222.75 hours
 
         const currentWageCost = aug8Hours * WAGE_RATE;
         const currentU917Cost = aug8Hours * U917_RATE;
@@ -363,7 +369,7 @@
         const totalEquipCombined = priorU917Cost + currentEquipSubtotal;
         const grandTotal = totalWagesCombined + totalEquipCombined;
 
-        // Render Current Section Values
+        // Render August Section Values
         wageTotalEl.textContent = `$${currentWageCost.toFixed(2)}`;
         u917TotalEl.textContent = `$${currentU917Cost.toFixed(2)}`;
         tn916TotalEl.textContent = `$${currentTn916Cost.toFixed(2)}`;
@@ -381,16 +387,15 @@
         sumGrandWagesEl.textContent = `$${totalWagesCombined.toFixed(2)}`;
         sumGrandEquipEl.textContent = `$${totalEquipCombined.toFixed(2)}`;
 
-        // Render Timers
+        // Render Fixed Timers
         const aug8Formatted = formatElapsed(aug8Ms);
         wageElapsedEl.textContent = aug8Formatted;
         u917ElapsedEl.textContent = aug8Formatted;
         tn916ElapsedEl.textContent = formatElapsed(aug7Ms);
     }
 
-    // Initialize and run real-time update every second
+    // Run calculation once
     calculate();
-    setInterval(calculate, 1000);
 </script>
 
 </body>
