@@ -671,7 +671,7 @@
             try {
               const res = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                redirect: 'follow',
                 body: JSON.stringify({
                   action: "deleteItem",
                   item: {
@@ -779,7 +779,7 @@
             try {
               const res = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                redirect: 'follow',
                 body: JSON.stringify({
                   action: "addItem",
                   item: {
@@ -871,7 +871,7 @@
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          redirect: 'follow',
           body: JSON.stringify({
             action: "moveItem",
             item: {
@@ -1058,7 +1058,7 @@
           try {
             const res = await fetch(GOOGLE_SCRIPT_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              redirect: 'follow',
               body: JSON.stringify({
                 action: "reactivateItem",
                 item: itemToRestore
@@ -1123,7 +1123,7 @@
 
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          redirect: 'follow',
           body: JSON.stringify(payload)
         });
 
