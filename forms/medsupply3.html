@@ -26,22 +26,12 @@
       background-color: var(--bg-color);
       color: var(--text-main);
       margin: 0;
-      padding: 0 24px 90px 24px;
-    }
-
-    /* STICKY TOP CONTAINER */
-    .top-sticky-wrapper {
-      position: sticky;
-      top: 0;
-      z-index: 800;
-      background-color: var(--bg-color);
-      padding-top: 24px;
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      padding: 24px;
+      padding-bottom: 90px;
     }
 
     header {
-      margin-bottom: 16px;
+      margin-bottom: 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -83,8 +73,9 @@
     .tabs {
       display: flex;
       gap: 12px;
-      margin-bottom: 0;
-      padding-bottom: 12px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
       overflow-x: auto;
     }
 
@@ -117,8 +108,6 @@
 
     .tab-btn.active .tab-status { background-color: rgba(255, 255, 255, 0.25); color: #fff; }
     .tab-btn.complete-tab .tab-status { background-color: var(--success-bg); color: var(--success-text); }
-
-    main { margin-top: 24px; }
 
     .shelf-section { margin-bottom: 32px; }
     .shelf-title {
@@ -431,18 +420,14 @@
     </div>
   </div>
 
-  <!-- STICKY TOP CONTAINER -->
-  <div class="top-sticky-wrapper">
-    <header>
-      <h1>Medical Supply Full Inspection</h1>
-      <button id="viewHistoryBtn" class="btn-history">
-        📋 View Prior Inspections / Inactive Items
-      </button>
-    </header>
+  <header>
+    <h1>Medical Supply Full Inspection</h1>
+    <button id="viewHistoryBtn" class="btn-history">
+      📋 View Prior Inspections / Inactive Items
+    </button>
+  </header>
 
-    <div class="tabs" id="tabContainer"></div>
-  </div>
-
+  <div class="tabs" id="tabContainer"></div>
   <main id="cabinetDisplay">
     <div class="loading-container">Loading supply items from Google Sheets...</div>
   </main>
