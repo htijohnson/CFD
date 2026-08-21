@@ -1091,31 +1091,20 @@
       });
     }
 
-    // OPTIMIZED ASYNC SUBMISSION
+    // SUBMISSION FUNCTION
     async function submitInspection(payload) {
-      overlayTitle.innerText = "Submitting Inspection...";
-      overlaySub.innerText = "Saving records to Google Sheets...";
-      loadingOverlay.classList.add('active');
+      const btn = document.getElementById("submitBtn");
+      btn.innerText = "Submitting...";
+      btn.disabled = true;
 
-      try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(payload)
+      });
 
-        const result = await response.json();
-        if (result.status === "success") {
-          alert("Inspection submitted successfully!");
-          location.reload();
-        } else {
-          alert("Error submitting inspection: " + result.message);
-        }
-      } catch (err) {
-        alert("Submission failed: " + err.message);
-      } finally {
-        loadingOverlay.classList.remove('active');
-      }
+      alert("Inspection submitted successfully!");
+      location.reload(); 
     }
 
     // SUBMISSION EVENT LISTENER
