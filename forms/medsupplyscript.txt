@@ -1,0 +1,318 @@
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const action = e.parameter.action;
+
+  // 1. Action: Get Available Locations
+  if (action === "locations") {
+    const invSheet = ss.getSheetByName("Inventory");
+    const data = invSheet.getDataRange().getValues();
+    const locations = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const cabinet = data[i][0];
+      const shelf = data[i][1];
+      const status = data[i][5];
+
+      if (cabinet && shelf && status !== "Inactive") {
+        if (!locations[cabinet]) locations[cabinet] = [];
+        if (!locations[cabinet].includes(shelf)) {
+          locations[cabinet].push(shelf);
+        }
+      }
+    }
+    return jsonResponse(locations);
+  }
+
+  // 2. Action: Get Inspection History
+  if (action === "history") {
+    const historySheet = ss.getSheetByName("History");
+    if (!historySheet) return jsonResponse([]);
+    
+    const data = historySheet.getDataRange().getValues();
+    const historyMap = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const timestamp = data[i][0];
+      const inspector = data[i][1];
+      const cabinet = data[i][2];
+      const shelf = data[i][3];
+      const name = data[i][4];
+      const min = data[i][5];
+      const qty = data[i][6];
+      const exp = data[i][7];
+
+      const formattedDate = timestamp ? new Date(timestamp).toLocaleString() : "Unknown";
+      const key = `${formattedDate}_${inspector}`;
+
+      if (!historyMap[key]) {
+        historyMap[key] = {
+          date: formattedDate,
+          inspector: inspector,
+          items: []
+        };
+      }
+
+      historyMap[key].items.push({
+        cabinet: cabinet,
+        shelf: shelf,
+        name: name,
+        min: min,
+        qty: qty,
+        exp: exp
+      });
+    }
+
+    const historyList = Object.values(historyMap).reverse();
+    return jsonResponse(historyList);
+  }
+
+  // 3. Action: Get Inactive Items
+  if (action === "inactive") {
+    const invSheet = ss.getSheetByName("Inventory");
+    const data = invSheet.getDataRange().getValues();
+    const inactiveItems = [];
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][5] === "Inactive") {
+        inactiveItems.push({
+          rowIndex: i + 1,
+          cabinet: data[i][0],
+          shelf: data[i][1],
+          name: data[i][2],
+          minQty: data[i][3],
+          currentQty: data[i][4]
+        });
+      }
+    }
+    return jsonResponse(inactiveItems);
+  }
+
+  // Default Action: Fetch Active Inventory Data
+  const invSheet = ss.getSheetByName("Inventory");
+  const data = invSheet.getDataRange().getValues();
+  const inventory = {};
+
+  for (let i = 1; i < data.length; i++) {
+    const cabinet = data[i][0];
+    const shelf = data[i][1];
+    const name = data[i][2];
+    const minQty = data[i][3];
+    const currentQty = data[i][4];
+    const status = data[i][5];
+    const hasExp = data[i][6] === true || data[i][6] === "TRUE";
+    const expDate = data[i][7] ? new Date(data[i][7]).toISOString().split('T')[0] : "";
+
+    if (!cabinet || status === "Inactive") continue;
+
+    if (!inventory[cabinet]) inventory[cabinet] = {};
+    if (!inventory[cabinet][shelf]) inventory[cabinet][shelf] = [];
+
+    inventory[cabinet][shelf].push({
+      name: name,
+      minQty: minQty,
+      currentQty: currentQty,
+      hasExp: hasExp,
+      expDate: expDate,
+      checked: false
+    });
+  }
+
+  return jsonResponse(inventory);
+}
+
+function doPost(e) {
+  try {
+    const contents = JSON.parse(e.postData.contents);
+    const action = contents.action;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // OPTIMIZED FAST SUBMISSION (No Email Call Included)
+    if (action === "submitInspection") {
+      const invSheet = ss.getSheetByName("Inventory");
+      let historySheet = ss.getSheetByName("History");
+
+      if (!historySheet) {
+        historySheet = ss.insertSheet("History");
+        historySheet.appendRow(["Timestamp", "Inspector", "Cabinet", "Shelf", "Item Name", "Target Min", "Recorded Qty", "Exp Date", "Email Status"]);
+      }
+
+      const invRange = invSheet.getDataRange();
+      const invData = invRange.getValues();
+      const items = contents.items || [];
+      const now = new Date();
+
+      // Lookup map for batch updates
+      const itemLookup = {};
+      items.forEach(item => {
+        const key = `${item.cabinet}|${item.shelf}|${item.name}`;
+        itemLookup[key] = item;
+      });
+
+      // Update Inventory memory matrix
+      const historyRows = [];
+      for (let i = 1; i < invData.length; i++) {
+        const key = `${invData[i][0]}|${invData[i][1]}|${invData[i][2]}`;
+        const item = itemLookup[key];
+
+        if (item) {
+          invData[i][4] = item.qty;
+          if (item.exp) {
+            invData[i][7] = item.exp;
+          }
+
+          historyRows.push([
+            now,
+            contents.inspector,
+            item.cabinet,
+            item.shelf,
+            item.name,
+            item.min,
+            item.qty,
+            item.exp,
+            "PENDING" // Column 9: Flag for background email trigger
+          ]);
+        }
+      }
+
+      // Execute bulk writes
+      if (historyRows.length > 0) {
+        historySheet.getRange(historySheet.getLastRow() + 1, 1, historyRows.length, 9).setValues(historyRows);
+      }
+      invRange.setValues(invData);
+
+      return jsonResponse({ status: "success" });
+    }
+
+    // Add Item
+    if (action === "addItem") {
+      const invSheet = ss.getSheetByName("Inventory");
+      const item = contents.item;
+
+      invSheet.appendRow([
+        item.cabinet,
+        item.shelf,
+        item.name,
+        item.minQty,
+        item.currentQty,
+        "Active",
+        item.hasExp ? "TRUE" : "FALSE",
+        ""
+      ]);
+
+      return jsonResponse({ status: "success" });
+    }
+
+    // Move Item Location
+    if (action === "moveItem") {
+      const invSheet = ss.getSheetByName("Inventory");
+      const invData = invSheet.getDataRange().getValues();
+      const item = contents.item;
+
+      for (let i = 1; i < invData.length; i++) {
+        if (invData[i][0] === item.oldCabinet && invData[i][1] === item.oldShelf && invData[i][2] === item.name) {
+          invSheet.getRange(i + 1, 1).setValue(item.newCabinet);
+          invSheet.getRange(i + 1, 2).setValue(item.newShelf);
+          break;
+        }
+      }
+
+      return jsonResponse({ status: "success" });
+    }
+
+    // Delete Item
+    if (action === "deleteItem") {
+      const invSheet = ss.getSheetByName("Inventory");
+      const invData = invSheet.getDataRange().getValues();
+      const item = contents.item;
+
+      for (let i = 1; i < invData.length; i++) {
+        if (invData[i][0] === item.cabinet && invData[i][1] === item.shelf && invData[i][2] === item.name) {
+          invSheet.getRange(i + 1, 6).setValue("Inactive");
+          break;
+        }
+      }
+
+      return jsonResponse({ status: "success" });
+    }
+
+    // Reactivate Item
+    if (action === "reactivateItem") {
+      const invSheet = ss.getSheetByName("Inventory");
+      const invData = invSheet.getDataRange().getValues();
+      const item = contents.item;
+
+      for (let i = 1; i < invData.length; i++) {
+        if (invData[i][0] === item.cabinet && invData[i][1] === item.shelf && invData[i][2] === item.name) {
+          invSheet.getRange(i + 1, 6).setValue("Active");
+          break;
+        }
+      }
+
+      return jsonResponse({ status: "success" });
+    }
+
+  } catch (err) {
+    return jsonResponse({ status: "error", message: err.toString() });
+  }
+}
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * BACKGROUND TIME-TRIGGERED FUNCTION
+ * Set this function to run on a 5-minute or 10-minute Time-Driven Trigger.
+ */
+function sendInspectionEmailReport() {
+  const EMAIL_RECIPIENT = "your-email@example.com"; // UPDATE THIS TO YOUR EMAIL
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const historySheet = ss.getSheetByName("History");
+  
+  if (!historySheet) return;
+
+  const dataRange = historySheet.getDataRange();
+  const data = dataRange.getValues();
+  const pendingRows = [];
+  const rowIndices = [];
+
+  // Find all records with 'PENDING' status in column I (index 8)
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][8] === "PENDING") {
+      pendingRows.push(data[i]);
+      rowIndices.push(i + 1);
+    }
+  }
+
+  if (pendingRows.length === 0) return;
+
+  // Group pending inspections by Inspector & Time
+  const inspector = pendingRows[0][1];
+  const timestamp = new Date(pendingRows[0][0]).toLocaleString();
+
+  let body = `Medical Supply Inspection Report\n`;
+  body += `Inspector: ${inspector}\n`;
+  body += `Date/Time: ${timestamp}\n\n`;
+  body += `ITEMS RECORDED:\n`;
+  body += `--------------------------------------------------\n`;
+
+  pendingRows.forEach(row => {
+    const cab = row[2];
+    const shelf = row[3];
+    const name = row[4];
+    const min = row[5];
+    const qty = row[6];
+    const exp = row[7] ? new Date(row[7]).toLocaleDateString() : "N/A";
+
+    body += `• ${name} [${cab} / ${shelf}]\n  Qty: ${qty} (Min: ${min}) | Exp: ${exp}\n`;
+  });
+
+  // Send Email asynchronously
+  MailApp.sendEmail(EMAIL_RECIPIENT, `Inspection Summary - ${inspector} (${timestamp})`, body);
+
+  // Update status in bulk to 'SENT' so emails aren't duplicated
+  rowIndices.forEach(rowIndex => {
+    historySheet.getRange(rowIndex, 9).setValue("SENT");
+  });
+}
