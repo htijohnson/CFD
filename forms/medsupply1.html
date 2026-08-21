@@ -216,11 +216,6 @@
       box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
     }
 
-    .inspector-input.error {
-      border-color: var(--danger-text);
-      box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
-    }
-
     .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .badge-ok { background: var(--success-bg); color: var(--success-text); }
     .badge-low { background: var(--warning-bg); color: var(--warning-text); }
@@ -293,6 +288,7 @@
 
     .inspector-box { display: flex; flex-direction: column; gap: 4px; }
     .inspector-input { padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 6px; width: 180px; transition: all 0.2s ease; }
+    .inspector-input.error { border-color: var(--danger-text); background-color: var(--danger-bg); }
 
     .btn-submit { background-color: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
     .btn-submit:hover { background-color: var(--primary-dark); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
@@ -444,11 +440,11 @@
     </div>
 
     <div class="inspector-box">
-      <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Inspector Name / Initials *</span>
-      <input type="text" id="inspectorName" class="inspector-input" placeholder="e.g. J.D. (Required)" required />
+      <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Inspector Name / Initials</span>
+      <input type="text" id="inspectorName" class="inspector-input" placeholder="e.g. J.D." />
     </div>
     
-    <button id="submitBtn" class="btn-submit">Submit Inspection</button>
+    <button id="submitBtn" class="btn-submit">Submit Entire Inspection</button>
   </div>
 
   <script>
@@ -485,12 +481,6 @@
     const editItemTitle = document.getElementById('editItemTitle');
     const editCabinetSelect = document.getElementById('editCabinetSelect');
     const editShelfSelect = document.getElementById('editShelfSelect');
-
-    inspectorInput.addEventListener('input', () => {
-      if (inspectorInput.value.trim() !== '') {
-        inspectorInput.classList.remove('error');
-      }
-    });
 
     async function loadDataFromSheet() {
       try {
@@ -566,9 +556,8 @@
 
     function getStockStatusClass(current, min) {
       const minVal = parseInt(min, 10) || 0;
-      const currVal = parseInt(current, 10) || 0;
-      if (currVal === 0) return { cardClass: 'out-of-stock', badgeClass: 'badge-empty', text: 'OUT OF STOCK' };
-      if (currVal < minVal) return { cardClass: 'low-stock', badgeClass: 'badge-low', text: 'LOW STOCK' };
+      if (current === 0) return { cardClass: 'out-of-stock', badgeClass: 'badge-empty', text: 'OUT OF STOCK' };
+      if (current < minVal) return { cardClass: 'low-stock', badgeClass: 'badge-low', text: 'LOW STOCK' };
       return { cardClass: 'in-stock', badgeClass: 'badge-ok', text: 'IN STOCK' };
     }
 
@@ -644,7 +633,7 @@
                 </div>
                 <div class="detail-row">
                   <span class="label">Current Stock:</span>
-                  <input type="number" min="0" class="stock-input" value="${item.currentQty !== undefined ? item.currentQty : ''}" placeholder="0" />
+                  <input type="number" min="0" class="stock-input" value="${item.currentQty}" />
                 </div>
               </div>
             </div>
@@ -682,8 +671,7 @@
             try {
               const res = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                redirect: 'follow',
                 body: JSON.stringify({
                   action: "deleteItem",
                   item: {
@@ -774,10 +762,15 @@
 
           saveBtn.addEventListener('click', async (evt) => {
             evt.stopPropagation();
-            const name = addCard.querySelector('.new-item-name').value.trim() || "New Item";
+            const name = addCard.querySelector('.new-item-name').value.trim();
             const minQty = parseInt(addCard.querySelector('.new-item-min').value, 10) || 0;
             const currentQty = parseInt(addCard.querySelector('.new-item-qty').value, 10) || 0;
             const hasExp = addCard.querySelector('.new-item-exp').checked;
+
+            if (!name) {
+              alert('Please enter an item name.');
+              return;
+            }
 
             overlayTitle.innerText = "Adding New Item...";
             overlaySub.innerText = "Writing item to Inventory sheet...";
@@ -786,8 +779,7 @@
             try {
               const res = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                redirect: 'follow',
                 body: JSON.stringify({
                   action: "addItem",
                   item: {
@@ -879,8 +871,7 @@
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          redirect: 'follow',
           body: JSON.stringify({
             action: "moveItem",
             item: {
@@ -980,7 +971,7 @@
           <div class="history-summary">
             <div>
               <div class="history-date">📅 ${record.date || 'Unknown Date'}</div>
-              <div class="history-meta">Inspector: <strong>${record.inspector || 'N/A'}</strong></div>
+              <div class="history-meta">Inspector: <strong>${record.inspector || 'Anonymous'}</strong></div>
             </div>
             <span style="font-size: 13px; color: var(--primary); font-weight: bold;">View Details ▼</span>
           </div>
@@ -1067,8 +1058,7 @@
           try {
             const res = await fetch(GOOGLE_SCRIPT_URL, {
               method: 'POST',
-              mode: 'cors',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              redirect: 'follow',
               body: JSON.stringify({
                 action: "reactivateItem",
                 item: itemToRestore
@@ -1091,70 +1081,65 @@
       });
     }
 
-    // SUBMISSION FUNCTION
-    async function submitInspection(payload) {
-      const btn = document.getElementById("submitBtn");
-      btn.innerText = "Submitting...";
-      btn.disabled = true;
-
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(payload)
-      });
-
-      alert("Inspection submitted successfully!");
-      location.reload(); 
-    }
-
-    // SUBMISSION EVENT LISTENER
-    submitBtn.addEventListener('click', () => {
+    // SUBMISSION LOGIC
+    submitBtn.addEventListener('click', async () => {
       const inspector = inspectorInput.value.trim();
+      inspectorInput.classList.remove('error');
 
-      // Enforce Inspector Name
       if (!inspector) {
         inspectorInput.classList.add('error');
         inspectorInput.focus();
-        alert('Please enter the Inspector Name or Initials before submitting.');
+        alert('Please enter inspector name or initials.');
         return;
       }
 
       const totalItems = [];
-      let uncheckedCount = 0;
-
-      // Check all items across cabinets and shelves
       Object.keys(inventoryData).forEach(cab => {
         Object.keys(inventoryData[cab]).forEach(shelf => {
           inventoryData[cab][shelf].forEach(item => {
-            if (!item.checked) {
-              uncheckedCount++;
-            }
             totalItems.push({
               cabinet: cab,
               shelf: shelf,
               name: item.name,
               min: item.minQty,
-              qty: item.currentQty !== undefined ? item.currentQty : 0,
+              qty: item.currentQty,
               exp: item.expDate || ''
             });
           });
         });
       });
 
-      // Enforce every item being checked
-      if (uncheckedCount > 0) {
-        alert(`Cannot submit: ${uncheckedCount} item(s) have not been checked yet. Please verify all items before submitting.`);
-        return;
+      overlayTitle.innerText = "Submitting Inspection...";
+      overlaySub.innerText = "Writing updates to Google Sheet...";
+      loadingOverlay.classList.add('active');
+
+      try {
+        const payload = {
+          action: "submitInspection",
+          inspector: inspector,
+          timestamp: new Date().toISOString(),
+          items: totalItems
+        };
+
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          redirect: 'follow',
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await res.json();
+
+        if (resData.status === "success") {
+          alert('Inspection submitted successfully!');
+          await loadDataFromSheet();
+        } else {
+          alert('Error updating sheet: ' + resData.message);
+        }
+      } catch (err) {
+        alert('Submission failed: ' + err.message);
+      } finally {
+        loadingOverlay.classList.remove('active');
       }
-
-      const payload = {
-        action: "submitInspection",
-        inspector: inspector,
-        timestamp: new Date().toISOString(),
-        items: totalItems
-      };
-
-      submitInspection(payload);
     });
 
     // Start App
