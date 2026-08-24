@@ -670,6 +670,7 @@
       cabinetDisplay.innerHTML = '';
       const shelves = inventoryData[activeCabinet] || {};
 
+      // Natural Shelf Sorting (Shelf 1 before Shelf 2)
       const sortedShelfNames = Object.keys(shelves).sort((a, b) => 
         a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
       );
@@ -694,6 +695,7 @@
           card.className = `item-card ${status.cardClass} ${item.checked ? 'verified' : ''}`;
           card.setAttribute('data-name', item.name);
 
+          // Universal Expiration Field
           const expHtml = `
             <div class="exp-date-box">
               <span class="label">Exp. Date:</span>
@@ -920,6 +922,7 @@
       updateGlobalProgress();
     }
 
+    // CHECK ALL ACROSS ALL CABINETS (PIN 1421 REQUIRED)
     checkAllBtn.addEventListener('click', () => {
       const pin = prompt(`Enter Security PIN to Check ALL items across ALL cabinets:`);
       if (pin === null) return;
@@ -940,6 +943,7 @@
       }
     });
 
+    // MOVE ITEM LOCATION MODAL LOGIC
     function openEditLocationModal(item, currentCabinet, currentShelf) {
       itemBeingEdited = { ...item, cabinet: currentCabinet, shelf: currentShelf };
       editItemTitle.innerText = item.name;
@@ -1022,6 +1026,7 @@
     closeEditModalBtn.onclick = () => editLocationModal.classList.remove('active');
     cancelEditBtn.onclick = () => editLocationModal.classList.remove('active');
 
+    // MOVE LOCATION EXECUTION VIA GET
     saveEditBtn.onclick = async () => {
       if (!itemBeingEdited) return;
 
@@ -1074,6 +1079,7 @@
       }
     };
 
+    // HISTORY AND INACTIVE MODAL LOGIC
     viewHistoryBtn.onclick = () => {
       historyModal.classList.add('active');
       loadModalContent();

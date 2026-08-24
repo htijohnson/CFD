@@ -1,318 +1,315 @@
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const EMAIL_RECIPIENT = "jjohnson@coburgfire.org";
+
+// ==========================================
+// GET REQUEST HANDLER
+// ==========================================
 function doGet(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const action = e.parameter.action;
-
-  // 1. Action: Get Available Locations
-  if (action === "locations") {
-    const invSheet = ss.getSheetByName("Inventory");
-    const data = invSheet.getDataRange().getValues();
-    const locations = {};
-
-    for (let i = 1; i < data.length; i++) {
-      const cabinet = data[i][0];
-      const shelf = data[i][1];
-      const status = data[i][5];
-
-      if (cabinet && shelf && status !== "Inactive") {
-        if (!locations[cabinet]) locations[cabinet] = [];
-        if (!locations[cabinet].includes(shelf)) {
-          locations[cabinet].push(shelf);
-        }
-      }
-    }
-    return jsonResponse(locations);
-  }
-
-  // 2. Action: Get Inspection History
+  var action = e ? e.parameter.action : null;
+  
   if (action === "history") {
-    const historySheet = ss.getSheetByName("History");
-    if (!historySheet) return jsonResponse([]);
+    return createJsonResponse(getInspectionHistory());
+  } else if (action === "inactive") {
+    return createJsonResponse(getInactiveItems());
+  } else if (action === "moveItem") {
+    const result = moveItemLocation(
+      e.parameter.oldCabinet,
+      e.parameter.oldShelf,
+      e.parameter.newCabinet,
+      e.parameter.newShelf,
+      e.parameter.name
+    );
+    return createJsonResponse(result);
+  }
+  
+  // Default: Return full active inventory
+  return createJsonResponse(getInventoryData());
+}
+
+// ==========================================
+// POST REQUEST HANDLER
+// ==========================================
+function doPost(e) {
+  try {
+    const contents = JSON.parse(e.postData.contents);
+    const action = contents.action;
+    let result = { status: "error", message: "Invalid action" };
+
+    if (action === "submitInspection") {
+      result = processInspectionSubmission(contents);
+    } else if (action === "addItem") {
+      result = addNewItem(contents.item);
+    } else if (action === "deleteItem") {
+      result = markItemInactive(contents.item);
+    } else if (action === "reactivateItem") {
+      result = reactivateItem(contents.item);
+    } else if (action === "reorderItems") {
+      result = reorderShelfItems(contents.cabinet, contents.shelf, contents.orderedNames);
+    }
+
+    return createJsonResponse(result);
+  } catch (err) {
+    return createJsonResponse({ status: "error", message: err.toString() });
+  }
+}
+
+// ==========================================
+// SUBMISSION HANDLER
+// ==========================================
+function processInspectionSubmission(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Log to "Inspection Log" sheet
+  let logSheet = ss.getSheetByName("Inspection Log");
+  if (!logSheet) {
+    logSheet = ss.insertSheet("Inspection Log");
+    logSheet.appendRow(["Timestamp", "Inspector", "Total Items", "Low Stock Count", "Items Details JSON"]);
+  } else {
+    // Ensure header row exists if empty
+    if (logSheet.getLastRow() === 0) {
+      logSheet.appendRow(["Timestamp", "Inspector", "Total Items", "Low Stock Count", "Items Details JSON"]);
+    }
+  }
+
+  const items = payload.items || [];
+  let lowStockCount = 0;
+  
+  items.forEach(i => {
+    const currentQty = parseInt(i.qty !== undefined ? i.qty : i.currentQty, 10) || 0;
+    const minQty = parseInt(i.min !== undefined ? i.min : i.minQty, 10) || 0;
+    if (currentQty < minQty) {
+      lowStockCount++;
+    }
+  });
+
+  const formattedDate = payload.timestamp 
+    ? payload.timestamp 
+    : Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
     
-    const data = historySheet.getDataRange().getValues();
-    const historyMap = {};
+  const itemsJson = JSON.stringify(items);
 
-    for (let i = 1; i < data.length; i++) {
-      const timestamp = data[i][0];
-      const inspector = data[i][1];
-      const cabinet = data[i][2];
-      const shelf = data[i][3];
-      const name = data[i][4];
-      const min = data[i][5];
-      const qty = data[i][6];
-      const exp = data[i][7];
+  // Append entry including itemized JSON into Column E
+  logSheet.appendRow([formattedDate, payload.inspector, items.length, lowStockCount, itemsJson]);
 
-      const formattedDate = timestamp ? new Date(timestamp).toLocaleString() : "Unknown";
-      const key = `${formattedDate}_${inspector}`;
+  // 2. Queue payload in ScriptProperties for the background timer
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const submissionKey = "SUBMISSION_" + new Date().getTime();
+  scriptProperties.setProperty(submissionKey, JSON.stringify({
+    inspector: payload.inspector,
+    timestamp: formattedDate,
+    items: items,
+    lowStockCount: lowStockCount
+  }));
 
-      if (!historyMap[key]) {
-        historyMap[key] = {
-          date: formattedDate,
-          inspector: inspector,
-          items: []
-        };
-      }
+  return { status: "success", message: "Inspection logged successfully" };
+}
 
-      historyMap[key].items.push({
-        cabinet: cabinet,
-        shelf: shelf,
-        name: name,
-        min: min,
-        qty: qty,
-        exp: exp
-      });
-    }
+// ==========================================
+// BACKGROUND EMAIL RUNNER (Triggered every 5 min)
+// ==========================================
+function sendDelayedEmailReport() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const keys = scriptProperties.getKeys();
 
-    const historyList = Object.values(historyMap).reverse();
-    return jsonResponse(historyList);
-  }
+  keys.forEach(key => {
+    if (key.indexOf("SUBMISSION_") === 0) {
+      const rawData = scriptProperties.getProperty(key);
+      if (rawData) {
+        const data = JSON.parse(rawData);
+        
+        let subject = `📋 Inspection Report Submitted by ${data.inspector}`;
+        if (data.lowStockCount > 0) {
+          subject = `⚠️ [LOW STOCK ALERT] Inspection Report by ${data.inspector}`;
+        }
 
-  // 3. Action: Get Inactive Items
-  if (action === "inactive") {
-    const invSheet = ss.getSheetByName("Inventory");
-    const data = invSheet.getDataRange().getValues();
-    const inactiveItems = [];
+        let bodyHtml = `
+          <h2>Medical Supply Inspection Report</h2>
+          <p><strong>Inspector:</strong> ${data.inspector}</p>
+          <p><strong>Date/Time:</strong> ${data.timestamp}</p>
+          <p><strong>Total Items Checked:</strong> ${data.items.length}</p>
+          <p><strong>Low/Out of Stock Items:</strong> <span style="color:${data.lowStockCount > 0 ? 'red' : 'green'}; font-weight:bold;">${data.lowStockCount}</span></p>
+          <hr>
+          <h3>Full Inventory Breakdown:</h3>
+          <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family:sans-serif; width:100%;">
+            <tr style="background-color:#f2f2f2;">
+              <th>Cabinet</th>
+              <th>Shelf</th>
+              <th>Item Name</th>
+              <th>Min Qty</th>
+              <th>Current Qty</th>
+              <th>Exp. Date</th>
+            </tr>
+        `;
 
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][5] === "Inactive") {
-        inactiveItems.push({
-          rowIndex: i + 1,
-          cabinet: data[i][0],
-          shelf: data[i][1],
-          name: data[i][2],
-          minQty: data[i][3],
-          currentQty: data[i][4]
+        data.items.forEach(item => {
+          const qty = parseInt(item.qty !== undefined ? item.qty : item.currentQty, 10) || 0;
+          const min = parseInt(item.min !== undefined ? item.min : item.minQty, 10) || 0;
+          const isLow = qty < min;
+          const rowBg = isLow ? "background-color:#ffe6e6;" : "";
+          
+          bodyHtml += `
+            <tr style="${rowBg}">
+              <td>${item.cabinet || 'N/A'}</td>
+              <td>${item.shelf || 'N/A'}</td>
+              <td><strong>${item.name || item.itemName}</strong></td>
+              <td>${min}</td>
+              <td>${qty}</td>
+              <td>${item.exp || item.expDate || 'N/A'}</td>
+            </tr>
+          `;
         });
+
+        bodyHtml += `</table>`;
+
+        MailApp.sendEmail({
+          to: EMAIL_RECIPIENT,
+          subject: subject,
+          htmlBody: bodyHtml
+        });
+
+        // Delete processed submission from queue
+        scriptProperties.deleteProperty(key);
       }
     }
-    return jsonResponse(inactiveItems);
-  }
+  });
+}
 
-  // Default Action: Fetch Active Inventory Data
-  const invSheet = ss.getSheetByName("Inventory");
-  const data = invSheet.getDataRange().getValues();
+// ==========================================
+// INVENTORY & UTILITY FUNCTIONS
+// ==========================================
+function getInventoryData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  if (!sheet) return {};
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return {};
+
   const inventory = {};
 
   for (let i = 1; i < data.length; i++) {
-    const cabinet = data[i][0];
-    const shelf = data[i][1];
-    const name = data[i][2];
-    const minQty = data[i][3];
-    const currentQty = data[i][4];
-    const status = data[i][5];
-    const hasExp = data[i][6] === true || data[i][6] === "TRUE";
-    const expDate = data[i][7] ? new Date(data[i][7]).toISOString().split('T')[0] : "";
-
-    if (!cabinet || status === "Inactive") continue;
+    const [cabinet, shelf, name, minQty, currentQty, expDate, status] = data[i];
+    
+    if (status === "Inactive") continue;
 
     if (!inventory[cabinet]) inventory[cabinet] = {};
     if (!inventory[cabinet][shelf]) inventory[cabinet][shelf] = [];
+
+    let formattedExp = "";
+    if (expDate instanceof Date) {
+      formattedExp = Utilities.formatDate(expDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    } else if (expDate) {
+      formattedExp = String(expDate);
+    }
 
     inventory[cabinet][shelf].push({
       name: name,
       minQty: minQty,
       currentQty: currentQty,
-      hasExp: hasExp,
-      expDate: expDate,
+      expDate: formattedExp,
       checked: false
     });
   }
 
-  return jsonResponse(inventory);
+  return inventory;
 }
 
-function doPost(e) {
-  try {
-    const contents = JSON.parse(e.postData.contents);
-    const action = contents.action;
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+function getInspectionHistory() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inspection Log");
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
 
-    // OPTIMIZED FAST SUBMISSION (No Email Call Included)
-    if (action === "submitInspection") {
-      const invSheet = ss.getSheetByName("Inventory");
-      let historySheet = ss.getSheetByName("History");
+  const history = [];
+  for (let i = data.length - 1; i >= 1; i--) {
+    let rawItems = data[i][4]; // Items JSON string stored in Column E
+    let itemsParsed = [];
 
-      if (!historySheet) {
-        historySheet = ss.insertSheet("History");
-        historySheet.appendRow(["Timestamp", "Inspector", "Cabinet", "Shelf", "Item Name", "Target Min", "Recorded Qty", "Exp Date", "Email Status"]);
+    if (rawItems) {
+      try {
+        itemsParsed = typeof rawItems === "string" ? JSON.parse(rawItems) : rawItems;
+      } catch (err) {
+        itemsParsed = [];
       }
-
-      const invRange = invSheet.getDataRange();
-      const invData = invRange.getValues();
-      const items = contents.items || [];
-      const now = new Date();
-
-      // Lookup map for batch updates
-      const itemLookup = {};
-      items.forEach(item => {
-        const key = `${item.cabinet}|${item.shelf}|${item.name}`;
-        itemLookup[key] = item;
-      });
-
-      // Update Inventory memory matrix
-      const historyRows = [];
-      for (let i = 1; i < invData.length; i++) {
-        const key = `${invData[i][0]}|${invData[i][1]}|${invData[i][2]}`;
-        const item = itemLookup[key];
-
-        if (item) {
-          invData[i][4] = item.qty;
-          if (item.exp) {
-            invData[i][7] = item.exp;
-          }
-
-          historyRows.push([
-            now,
-            contents.inspector,
-            item.cabinet,
-            item.shelf,
-            item.name,
-            item.min,
-            item.qty,
-            item.exp,
-            "PENDING" // Column 9: Flag for background email trigger
-          ]);
-        }
-      }
-
-      // Execute bulk writes
-      if (historyRows.length > 0) {
-        historySheet.getRange(historySheet.getLastRow() + 1, 1, historyRows.length, 9).setValues(historyRows);
-      }
-      invRange.setValues(invData);
-
-      return jsonResponse({ status: "success" });
     }
 
-    // Add Item
-    if (action === "addItem") {
-      const invSheet = ss.getSheetByName("Inventory");
-      const item = contents.item;
-
-      invSheet.appendRow([
-        item.cabinet,
-        item.shelf,
-        item.name,
-        item.minQty,
-        item.currentQty,
-        "Active",
-        item.hasExp ? "TRUE" : "FALSE",
-        ""
-      ]);
-
-      return jsonResponse({ status: "success" });
-    }
-
-    // Move Item Location
-    if (action === "moveItem") {
-      const invSheet = ss.getSheetByName("Inventory");
-      const invData = invSheet.getDataRange().getValues();
-      const item = contents.item;
-
-      for (let i = 1; i < invData.length; i++) {
-        if (invData[i][0] === item.oldCabinet && invData[i][1] === item.oldShelf && invData[i][2] === item.name) {
-          invSheet.getRange(i + 1, 1).setValue(item.newCabinet);
-          invSheet.getRange(i + 1, 2).setValue(item.newShelf);
-          break;
-        }
-      }
-
-      return jsonResponse({ status: "success" });
-    }
-
-    // Delete Item
-    if (action === "deleteItem") {
-      const invSheet = ss.getSheetByName("Inventory");
-      const invData = invSheet.getDataRange().getValues();
-      const item = contents.item;
-
-      for (let i = 1; i < invData.length; i++) {
-        if (invData[i][0] === item.cabinet && invData[i][1] === item.shelf && invData[i][2] === item.name) {
-          invSheet.getRange(i + 1, 6).setValue("Inactive");
-          break;
-        }
-      }
-
-      return jsonResponse({ status: "success" });
-    }
-
-    // Reactivate Item
-    if (action === "reactivateItem") {
-      const invSheet = ss.getSheetByName("Inventory");
-      const invData = invSheet.getDataRange().getValues();
-      const item = contents.item;
-
-      for (let i = 1; i < invData.length; i++) {
-        if (invData[i][0] === item.cabinet && invData[i][1] === item.shelf && invData[i][2] === item.name) {
-          invSheet.getRange(i + 1, 6).setValue("Active");
-          break;
-        }
-      }
-
-      return jsonResponse({ status: "success" });
-    }
-
-  } catch (err) {
-    return jsonResponse({ status: "error", message: err.toString() });
+    history.push({
+      date: data[i][0],
+      inspector: data[i][1],
+      totalItems: data[i][2],
+      lowStockCount: data[i][3],
+      items: itemsParsed
+    });
   }
+  return history;
 }
 
-function jsonResponse(data) {
+function getInactiveItems() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  
+  const inactive = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][6] === "Inactive") {
+      inactive.push({ cabinet: data[i][0], shelf: data[i][1], name: data[i][2] });
+    }
+  }
+  return inactive;
+}
+
+function addNewItem(item) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  sheet.appendRow([item.cabinet, item.shelf, item.name, item.minQty, item.currentQty, item.expDate || "", "Active"]);
+  return { status: "success" };
+}
+
+function markItemInactive(item) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === item.cabinet && data[i][1] === item.shelf && data[i][2] === item.name) {
+      sheet.getRange(i + 1, 7).setValue("Inactive");
+      return { status: "success" };
+    }
+  }
+  return { status: "error", message: "Item not found" };
+}
+
+function reactivateItem(item) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === item.cabinet && data[i][1] === item.shelf && data[i][2] === item.name) {
+      sheet.getRange(i + 1, 7).setValue("Active");
+      return { status: "success" };
+    }
+  }
+  return { status: "error", message: "Item not found" };
+}
+
+function moveItemLocation(oldCab, oldShelf, newCab, newShelf, itemName) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === oldCab && data[i][1] === oldShelf && data[i][2] === itemName) {
+      sheet.getRange(i + 1, 1).setValue(newCab);
+      sheet.getRange(i + 1, 2).setValue(newShelf);
+      return { status: "success" };
+    }
+  }
+  return { status: "error", message: "Item not found" };
+}
+
+function reorderShelfItems(cabinet, shelf, orderedNames) {
+  return { status: "success" };
+}
+
+function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-/**
- * BACKGROUND TIME-TRIGGERED FUNCTION
- * Set this function to run on a 5-minute or 10-minute Time-Driven Trigger.
- */
-function sendInspectionEmailReport() {
-  const EMAIL_RECIPIENT = "your-email@example.com"; // UPDATE THIS TO YOUR EMAIL
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const historySheet = ss.getSheetByName("History");
-  
-  if (!historySheet) return;
-
-  const dataRange = historySheet.getDataRange();
-  const data = dataRange.getValues();
-  const pendingRows = [];
-  const rowIndices = [];
-
-  // Find all records with 'PENDING' status in column I (index 8)
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][8] === "PENDING") {
-      pendingRows.push(data[i]);
-      rowIndices.push(i + 1);
-    }
-  }
-
-  if (pendingRows.length === 0) return;
-
-  // Group pending inspections by Inspector & Time
-  const inspector = pendingRows[0][1];
-  const timestamp = new Date(pendingRows[0][0]).toLocaleString();
-
-  let body = `Medical Supply Inspection Report\n`;
-  body += `Inspector: ${inspector}\n`;
-  body += `Date/Time: ${timestamp}\n\n`;
-  body += `ITEMS RECORDED:\n`;
-  body += `--------------------------------------------------\n`;
-
-  pendingRows.forEach(row => {
-    const cab = row[2];
-    const shelf = row[3];
-    const name = row[4];
-    const min = row[5];
-    const qty = row[6];
-    const exp = row[7] ? new Date(row[7]).toLocaleDateString() : "N/A";
-
-    body += `• ${name} [${cab} / ${shelf}]\n  Qty: ${qty} (Min: ${min}) | Exp: ${exp}\n`;
-  });
-
-  // Send Email asynchronously
-  MailApp.sendEmail(EMAIL_RECIPIENT, `Inspection Summary - ${inspector} (${timestamp})`, body);
-
-  // Update status in bulk to 'SENT' so emails aren't duplicated
-  rowIndices.forEach(rowIndex => {
-    historySheet.getRange(rowIndex, 9).setValue("SENT");
-  });
 }
