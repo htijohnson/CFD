@@ -256,7 +256,6 @@
     </div>
 
     <script>
-      const currentAccountEmail = "<?= userEmail ?>";
       let processedTransactions = null;
 
       function updateFileName() {
@@ -293,7 +292,11 @@
       async function processTransactionsWithLiveLogs(csvContent) {
         const logsDiv = document.getElementById('logs');
         logsDiv.innerHTML = "";
-        
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+          throw new Error("Google API not detected. Please ensure this app is running from the deployed Google Apps Script Web App URL.");
+        }
+
         appendLog("[INIT] Reading CSV data...", "log-info");
 
         return new Promise((resolve, reject) => {
@@ -302,7 +305,7 @@
             .withSuccessHandler(function(transactions) {
               if (!transactions || transactions.length === 0) {
                 setStatus("No matching debit transactions found in CSV.", "error");
-                reject("No transactions");
+                reject(new Error("No transactions found for target member."));
                 return;
               }
 
@@ -342,10 +345,14 @@
                   processedTransactions = transactions;
                   resolve({ transactions, matchedTotal });
                 })
-                .withFailureHandler(reject)
+                .withFailureHandler(function(err) {
+                  reject(new Error(err.message || err));
+                })
                 .getDriveFileList();
             })
-            .withFailureHandler(reject)
+            .withFailureHandler(function(err) {
+              reject(new Error(err.message || err));
+            })
             .parseCsvTransactions(csvContent);
         });
       }
@@ -383,6 +390,11 @@
 
         if (!fileInput.files.length) {
           alert("Please select a CSV statement file first.");
+          return;
+        }
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+          setStatus("Error: Google API not detected. Please run this app from the Google Apps Script Web App URL.", "error");
           return;
         }
 
