@@ -256,6 +256,10 @@
     </div>
 
     <script>
+<<<<<<< HEAD
+=======
+      const currentAccountEmail = "<?= userEmail ?>";
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
       let processedTransactions = null;
 
       function updateFileName() {
@@ -292,11 +296,15 @@
       async function processTransactionsWithLiveLogs(csvContent) {
         const logsDiv = document.getElementById('logs');
         logsDiv.innerHTML = "";
+<<<<<<< HEAD
 
         if (typeof google === 'undefined' || !google.script || !google.script.run) {
           throw new Error("Google API not detected. Please ensure this app is running from the deployed Google Apps Script Web App URL.");
         }
 
+=======
+        
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
         appendLog("[INIT] Reading CSV data...", "log-info");
 
         return new Promise((resolve, reject) => {
@@ -305,7 +313,11 @@
             .withSuccessHandler(function(transactions) {
               if (!transactions || transactions.length === 0) {
                 setStatus("No matching debit transactions found in CSV.", "error");
+<<<<<<< HEAD
                 reject(new Error("No transactions found for target member."));
+=======
+                reject("No transactions");
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
                 return;
               }
 
@@ -345,6 +357,7 @@
                   processedTransactions = transactions;
                   resolve({ transactions, matchedTotal });
                 })
+<<<<<<< HEAD
                 .withFailureHandler(function(err) {
                   reject(new Error(err.message || err));
                 })
@@ -353,6 +366,12 @@
             .withFailureHandler(function(err) {
               reject(new Error(err.message || err));
             })
+=======
+                .withFailureHandler(reject)
+                .getDriveFileList();
+            })
+            .withFailureHandler(reject)
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
             .parseCsvTransactions(csvContent);
         });
       }
@@ -393,11 +412,14 @@
           return;
         }
 
+<<<<<<< HEAD
         if (typeof google === 'undefined' || !google.script || !google.script.run) {
           setStatus("Error: Google API not detected. Please run this app from the Google Apps Script Web App URL.", "error");
           return;
         }
 
+=======
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
         const file = fileInput.files[0];
         const reader = new FileReader();
 
@@ -443,4 +465,8 @@
       ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (evt) => { evt.preventDefault(); dropZone.classList.remove('dragover'); }, false));
     </script>
   </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> c710730cf5ee19171bf5b94119863ae65d6faaef
