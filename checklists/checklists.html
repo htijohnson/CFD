@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklists Hub - Coburg Fire District</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cabinet+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0f1115;
+            --bg-card: #161920;
+            --bg-card-hover: #1e222b;
+            --border-color: rgba(255, 255, 255, 0.06);
+            
+            --primary: #dc2626; /* Fire Crimson */
+            --primary-hover: #b91c1c;
+            --primary-glow: rgba(220, 38, 38, 0.25);
+            
+            --accent: #f59e0b; /* Amber/Gold Alert Tint */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Cabinet Grotesk', 'Inter', sans-serif;
+            
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Main Workspace Container */
+        .dashboard-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .welcome-header {
+            margin-bottom: 3rem;
+        }
+
+        .welcome-header h1 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 2.5rem;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        /* Grid Matrix Layout */
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Dashboard Link Cards */
+        .portal-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 160px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-glow) 0%, transparent 50%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-4px);
+            background-color: var(--bg-card-hover);
+            border-color: rgba(220, 38, 38, 0.3);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 
+                        0 0 0 1px rgba(220, 38, 38, 0.1);
+        }
+
+        .portal-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Disabled / Coming Soon Card Style */
+        .portal-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .portal-card.disabled:hover {
+            transform: none;
+            background-color: var(--bg-card);
+            border-color: var(--border-color);
+            box-shadow: none;
+        }
+
+        .portal-card.disabled:hover::before {
+            opacity: 0;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 2;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon-frame {
+            width: 48px;
+            height: 48px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .portal-card:hover:not(.disabled) .card-icon-frame {
+            background-color: rgba(220, 38, 38, 0.15);
+            border-color: rgba(220, 38, 38, 0.3);
+            color: var(--primary);
+        }
+
+        .action-arrow {
+            color: var(--text-muted);
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: var(--transition);
+        }
+
+        .portal-card:hover:not(.disabled) .action-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--accent);
+        }
+
+        .card-info {
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-title {
+            font-family: var(--font-sans);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.01em;
+        }
+
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Embedded Workspace View Styles */
+        .workspace-view {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-main);
+            position: relative;
+            z-index: 5;
+        }
+
+        .workspace-control-bar {
+            background-color: #161920;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-back {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-back:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .workspace-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .iframe-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: white;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Footer info block */
+        .footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding: 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background-color: #0b0c0f;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container { padding: 2rem 1rem; }
+            .welcome-header h1 { font-size: 2rem; }
+            .link-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <main class="dashboard-container" id="mainDashboardView">
+        <header class="welcome-header">
+            <h1>Operational Checklists</h1>
+            <p>Select a digital checklist module below to launch its interactive verification sheet.</p>
+        </header>
+
+        <div class="link-grid">
+
+            <!-- Medical Checklist Card -->
+            <div onclick="openInWorkspace('https://htijohnson.github.io/CFD/checklists/medschecklist.html', 'Medical Checklist')" class="portal-card">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                    </div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Medical Checklist</div>
+                    <div class="card-desc">Verify pharmaceutical inventory, check expiration dates, and confirm medical box restock controls.</div>
+                </div>
+            </div>
+
+            <!-- Placeholder: Apparatus Inspection -->
+            <div class="portal-card disabled">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="6.5" cy="18.5" r="2.5"/><circle cx="16.5" cy="18.5" r="2.5"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Apparatus Inspection</div>
+                    <div class="card-desc">Daily engine and rescue rig equipment operational check (Coming Soon).</div>
+                </div>
+            </div>
+
+            <!-- Placeholder: Daily Shift Duties -->
+            <div class="portal-card disabled">
+                <div class="card-top">
+                    <div class="card-icon-frame">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">Shift Duties</div>
+                    <div class="card-desc">Station maintenance, chore rotation, and routine operational task logs (Coming Soon).</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="workspaceView" class="workspace-view">
+        <div class="workspace-control-bar">
+            <button class="btn-back" onclick="showDashboard()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Back to Checklists Hub
+            </button>
+            <div class="workspace-title" id="workspaceTitle">Loading Checklist...</div>
+            <div style="width: 140px;"></div>
+        </div>
+        <div class="iframe-container">
+            <iframe id="appSandboxFrame" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <footer class="footer" id="appFooter">
+        &copy; 2026 Coburg Fire District. Internal Operations Portal. All Rights Reserved.
+    </footer>
+
+    <script>
+        const dashboardView = document.getElementById('mainDashboardView');
+        const workspaceView = document.getElementById('workspaceView');
+        const appFrame = document.getElementById('appSandboxFrame');
+        const wsTitle = document.getElementById('workspaceTitle');
+        const footer = document.getElementById('appFooter');
+
+        function openInWorkspace(url, title) {
+            wsTitle.innerText = title;
+            appFrame.src = url;
+            
+            dashboardView.style.display = 'none';
+            footer.style.display = 'none';
+            workspaceView.style.display = 'flex';
+        }
+
+        function showDashboard() {
+            appFrame.src = 'about:blank';
+            workspaceView.style.display = 'none';
+            
+            dashboardView.style.display = 'block';
+            footer.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
