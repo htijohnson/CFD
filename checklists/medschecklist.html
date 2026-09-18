@@ -56,50 +56,6 @@
             pointer-events: none;
         }
 
-        /* Top Bar Navigation */
-        .navbar {
-            background-color: rgba(22, 25, 32, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 2rem;
-            height: 72px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-decoration: none;
-        }
-
-        .brand-logo-img {
-            height: 42px;
-            width: auto;
-            object-fit: contain;
-            border-radius: 6px;
-            display: block;
-        }
-
-        .brand-text {
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 1.25rem;
-            color: var(--text-main);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .brand-text span {
-            color: var(--primary);
-        }
-
         /* Main Workspace Container */
         .dashboard-container {
             max-width: 1200px;
@@ -250,7 +206,6 @@
         }
 
         @media (max-width: 768px) {
-            .navbar { padding: 0 1rem; }
             .dashboard-container { padding: 2rem 1rem; }
             .welcome-header h1 { font-size: 2rem; }
             .link-grid { grid-template-columns: 1fr; }
@@ -260,13 +215,6 @@
 <body>
 
     <div class="ambient-glow"></div>
-
-    <nav class="navbar">
-        <a href="#" class="nav-brand">
-            <img class="brand-logo-img" src="https://www.coburgfire.org/uploads/3/4/3/9/3439095/published/coburg-fire-logo.jpeg?1521913602" alt="Coburg Fire Logo">
-            <div class="brand-text">Medical <span>Checklists</span></div>
-        </a>
-    </nav>
 
     <main class="dashboard-container">
         <header class="welcome-header">
