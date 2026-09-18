@@ -61,10 +61,30 @@
             max-width: 1200px;
             width: 100%;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 3rem 2rem;
             position: relative;
             z-index: 1;
             flex: 1;
+        }
+
+        .welcome-header {
+            margin-bottom: 3rem;
+        }
+
+        .welcome-header h1 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 2.5rem;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
         }
 
         /* Grid Matrix Layout */
@@ -187,6 +207,7 @@
 
         @media (max-width: 768px) {
             .dashboard-container { padding: 2rem 1rem; }
+            .welcome-header h1 { font-size: 2rem; }
             .link-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -196,6 +217,11 @@
     <div class="ambient-glow"></div>
 
     <main class="dashboard-container">
+        <header class="welcome-header">
+            <h1>Equipment Inspection Checklists</h1>
+            <p>Select a module below to launch the corresponding inspection or inventory form.</p>
+        </header>
+
         <div class="link-grid">
 
             <!-- Medical Cabinet -->
