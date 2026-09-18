@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Item Checklist System - Coburg Fire District</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,7 +32,6 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -67,7 +66,6 @@
                   0 0 0 1px var(--border-color);
       position: relative;
       z-index: 1;
-      transition: max-width 0.3s ease;
     }
 
     .header-row {
@@ -77,14 +75,6 @@
       margin-bottom: 24px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border-color);
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
     }
 
     h1 { 
@@ -107,9 +97,6 @@
       border-radius: 8px;
       cursor: pointer;
       transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .btn-secondary:hover { 
@@ -261,7 +248,6 @@
       box-sizing: border-box;
       min-width: 0;
       transition: var(--transition);
-      user-select: none;
     }
 
     .check-item:hover { 
@@ -278,8 +264,8 @@
     }
 
     .check-item input[type="checkbox"] { 
-      width: 18px; 
-      height: 18px; 
+      width: 16px; 
+      height: 16px; 
       cursor: pointer; 
       flex-shrink: 0;
       accent-color: var(--primary);
@@ -345,83 +331,9 @@
 
     .status-msg { font-size: 13px; color: var(--text-muted); margin-top: 12px; text-align: center; }
 
-    /* Auto Responsive Breakpoint */
     @media (max-width: 900px) {
-      body { padding: 12px; }
-      .container { padding: 16px; }
       .form-grid, .filter-grid, .meta-grid { grid-template-columns: 1fr; }
       .location-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .history-items-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Dedicated Mobile-Optimized Layout Override Mode */
-    body.mobile-mode {
-      padding: 8px;
-    }
-
-    body.mobile-mode .container {
-      max-width: 500px;
-      padding: 16px;
-      border-radius: 12px;
-    }
-
-    body.mobile-mode .header-row {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-
-    body.mobile-mode .header-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    body.mobile-mode .form-grid, 
-    body.mobile-mode .filter-grid, 
-    body.mobile-mode .meta-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    body.mobile-mode select, 
-    body.mobile-mode input[type="text"] {
-      padding: 14px;
-      font-size: 16px; /* Prevents auto-zoom on iOS */
-    }
-
-    body.mobile-mode .location-body {
-      grid-template-columns: 1fr;
-      gap: 10px;
-      padding: 12px;
-    }
-
-    body.mobile-mode .check-item {
-      padding: 14px 16px;
-      border-radius: 10px;
-      background: #1a1e27;
-      min-height: 52px;
-    }
-
-    body.mobile-mode .check-item input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-    }
-
-    body.mobile-mode .item-name {
-      font-size: 15px;
-      white-space: normal;
-      word-break: break-word;
-    }
-
-    body.mobile-mode .history-items-grid {
-      grid-template-columns: 1fr;
-    }
-
-    body.mobile-mode .btn-submit {
-      padding: 16px;
-      font-size: 16px;
-      border-radius: 10px;
     }
   </style>
 </head>
@@ -431,15 +343,13 @@
 
   <div class="container">
     <div class="header-row">
-      <h1>📋 Item Checklist</h1>
-      <div class="header-actions">
-        <button id="layoutToggleBtn" class="btn-secondary">📱 Mobile View</button>
-        <button id="toggleLookupBtn" class="btn-secondary">🔍 History</button>
-      </div>
+      <h1>📋 Item Inspection Checklist</h1>
+      <button id="toggleLookupBtn" class="btn-secondary">🔍 Lookup Prior Inspection</button>
     </div>
 
     <!-- Lookup Section -->
     <div id="lookupPanel" class="lookup-panel">
+      <!-- 3-Way Search Filters -->
       <div class="filter-grid">
         <div>
           <label class="section-title">FILTER BY TAG #</label>
@@ -457,6 +367,7 @@
         </div>
       </div>
 
+      <!-- Result Dropdown -->
       <div style="margin-bottom: 12px;">
         <label class="section-title">SELECT INDIVIDUAL INSPECTION *</label>
         <select id="inspectionDropdown">
@@ -499,6 +410,7 @@
   </div>
 
   <script>
+    // Paste your Google Apps Script Web App URL below:
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8TFsplCvHqdM3Ekh0Cq750QS-q2CLIPa5Julqu3P3zuEB16gC_yo90XO94ndO8vv7/exec";
 
     let sheetData = {};
@@ -520,31 +432,6 @@
     const lookupCategorySelect = document.getElementById('lookupCategorySelect');
     const inspectionDropdown = document.getElementById('inspectionDropdown');
     const selectedInspectionContainer = document.getElementById('selectedInspectionContainer');
-    const layoutToggleBtn = document.getElementById('layoutToggleBtn');
-
-    // Toggle Mobile-Optimized Layout
-    function setMobileMode(isMobile) {
-      if (isMobile) {
-        document.body.classList.add('mobile-mode');
-        layoutToggleBtn.innerText = "🖥️ Desktop View";
-        localStorage.setItem('layout_mode', 'mobile');
-      } else {
-        document.body.classList.remove('mobile-mode');
-        layoutToggleBtn.innerText = "📱 Mobile View";
-        localStorage.setItem('layout_mode', 'desktop');
-      }
-    }
-
-    layoutToggleBtn.addEventListener('click', () => {
-      const isMobile = document.body.classList.contains('mobile-mode');
-      setMobileMode(!isMobile);
-    });
-
-    // Auto-detect saved mode or small screens on load
-    const savedLayout = localStorage.getItem('layout_mode');
-    if (savedLayout === 'mobile' || (!savedLayout && window.innerWidth <= 768)) {
-      setMobileMode(true);
-    }
 
     async function loadSheets() {
       try {
@@ -582,6 +469,7 @@
       }
     }
 
+    // Dynamic Tag Badges Update
     tagNumberInput.addEventListener('input', () => {
       const tagVal = tagNumberInput.value.trim() || "---";
       document.querySelectorAll('.tag-display').forEach(el => {
@@ -636,6 +524,7 @@
       checklistContainer.style.display = 'block';
     });
 
+    // Toggle Lookup Panel
     toggleLookupBtn.addEventListener('click', () => {
       const isVisible = lookupPanel.style.display === 'block';
       lookupPanel.style.display = isVisible ? 'none' : 'block';
@@ -644,6 +533,7 @@
       }
     });
 
+    // Trigger lookup options update on any filter input change
     lookupTagInput.addEventListener('input', fetchHistoryOptions);
     lookupInitialsInput.addEventListener('input', fetchHistoryOptions);
     lookupCategorySelect.addEventListener('change', fetchHistoryOptions);
@@ -684,6 +574,7 @@
       }
     }
 
+    // Render detailed results when an option is selected from the inspection dropdown
     inspectionDropdown.addEventListener('change', () => {
       const selectedIndex = inspectionDropdown.value;
       selectedInspectionContainer.innerHTML = '';
@@ -729,6 +620,7 @@
       `;
     });
 
+    // Submit Form
     submitBtn.addEventListener('click', async () => {
       const tagNumber = tagNumberInput.value.trim();
       const initials = initialsInput.value.trim();
