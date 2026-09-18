@@ -67,10 +67,11 @@
             flex: 1;
         }
 
-        /* Grid Matrix Layout */
+        /* Grid Matrix Layout - Centered */
         .link-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 350px));
+            justify-content: center;
             gap: 1.5rem;
         }
 
@@ -214,8 +215,8 @@
                 </div>
             </a>
 
-            <!-- Med Boxes -->
-            <a href="https://htijohnson.github.io/CFD/checklists/medbox.html" class="portal-card">
+            <!-- Medical Gear Checklist -->
+            <a href="https://htijohnson.github.io/CFD/checklists/medgear.html" class="portal-card">
                 <div class="card-top">
                     <div class="card-icon-frame">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
@@ -225,72 +226,8 @@
                     </div>
                 </div>
                 <div class="card-info">
-                    <div class="card-title">Med Boxes</div>
-                    <div class="card-desc">Apparatus response box seals, medications, and contents verification.</div>
-                </div>
-            </a>
-
-            <!-- Airway Kit -->
-            <a href="https://htijohnson.github.io/CFD/checklists/airwaykit.html" class="portal-card">
-                <div class="card-top">
-                    <div class="card-icon-frame">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </div>
-                    <div class="action-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </div>
-                </div>
-                <div class="card-info">
-                    <div class="card-title">Airway Kit</div>
-                    <div class="card-desc">Advanced airway management tools, BVMs, and suction apparatus status.</div>
-                </div>
-            </a>
-
-            <!-- IV Kit -->
-            <a href="https://htijohnson.github.io/CFD/checklists/ivkit.html" class="portal-card">
-                <div class="card-top">
-                    <div class="card-icon-frame">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </div>
-                    <div class="action-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </div>
-                </div>
-                <div class="card-info">
-                    <div class="card-title">IV Kit</div>
-                    <div class="card-desc">Vascular access supplies, tubing, fluid bags, and catheter verification.</div>
-                </div>
-            </a>
-
-            <!-- O2 Kit -->
-            <a href="https://htijohnson.github.io/CFD/checklists/o2kit.html" class="portal-card">
-                <div class="card-top">
-                    <div class="card-icon-frame">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/></svg>
-                    </div>
-                    <div class="action-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </div>
-                </div>
-                <div class="card-info">
-                    <div class="card-title">O2 Kit</div>
-                    <div class="card-desc">Oxygen cylinder pressures, regulators, masks, and delivery supplies.</div>
-                </div>
-            </a>
-
-            <!-- Zoll Monitors -->
-            <a href="https://htijohnson.github.io/CFD/checklists/zolls.html" class="portal-card">
-                <div class="card-top">
-                    <div class="card-icon-frame">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    </div>
-                    <div class="action-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </div>
-                </div>
-                <div class="card-info">
-                    <div class="card-title">Zoll Monitors</div>
-                    <div class="card-desc">Defibrillator check, battery levels, pads, cables, and daily self-test verification.</div>
+                    <div class="card-title">Medical Gear Checklist</div>
+                    <div class="card-desc">Medical Box, O2 Kit, Airway Kit, IV Kit, Peds Bag, Zoll and other apparatus based medical gear</div>
                 </div>
             </a>
 

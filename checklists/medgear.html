@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Item Checklist System - Coburg Fire District</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cabinet+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0f1115;
+      --bg-card: #161920;
+      --bg-card-hover: #1e222b;
+      --border-color: rgba(255, 255, 255, 0.08);
+      
+      --primary: #dc2626; /* Fire Crimson */
+      --primary-dark: #b91c1c;
+      --primary-glow: rgba(220, 38, 38, 0.25);
+      
+      --accent: #f59e0b; /* Amber/Gold Alert */
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --success: #10b981;
+
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+      letter-spacing: -0.01em;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(220, 38, 38, 0.12) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 
+                  0 0 0 1px var(--border-color);
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    h1 { 
+      font-size: 22px; 
+      font-weight: 700;
+      margin: 0; 
+      color: var(--text-main); 
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-secondary:hover { 
+      background: rgba(255, 255, 255, 0.1); 
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    label.section-title {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background-color: #0d0f12;
+      color: var(--text-main);
+      transition: var(--transition);
+    }
+
+    select:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Lookup Panel Styling */
+    .lookup-panel {
+      display: none;
+      background: #11141a;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .inspection-detail-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .meta-grid strong {
+      color: var(--text-main);
+    }
+
+    .history-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .history-item-chip {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border-color);
+    }
+
+    .chip-checked { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
+    .chip-unchecked { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+
+    /* Checklist Section */
+    .checklist-group {
+      margin-top: 24px;
+      margin-bottom: 24px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .location-card {
+      background: #12151b;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .location-header {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .location-body {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      box-sizing: border-box;
+      min-width: 0;
+      transition: var(--transition);
+    }
+
+    .check-item:hover { 
+      background: var(--bg-card-hover); 
+      border-color: rgba(220, 38, 38, 0.3);
+    }
+
+    .check-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-grow: 1;
+    }
+
+    .check-item input[type="checkbox"] { 
+      width: 16px; 
+      height: 16px; 
+      cursor: pointer; 
+      flex-shrink: 0;
+      accent-color: var(--primary);
+    }
+
+    .item-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tag-badge {
+      background: rgba(220, 38, 38, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(220, 38, 38, 0.2);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    .qty-badge {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-submit:hover { 
+      background: var(--primary-dark); 
+      transform: translateY(-1px);
+    }
+    
+    .btn-submit:disabled { 
+      background: #451a1a; 
+      color: #888;
+      cursor: not-allowed; 
+      box-shadow: none;
+    }
+
+    .status-msg { font-size: 13px; color: var(--text-muted); margin-top: 12px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .form-grid, .filter-grid, .meta-grid { grid-template-columns: 1fr; }
+      .location-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <div class="container">
+    <div class="header-row">
+      <h1>📋 Item Inspection Checklist</h1>
+      <button id="toggleLookupBtn" class="btn-secondary">🔍 Lookup Prior Inspection</button>
+    </div>
+
+    <!-- Lookup Section -->
+    <div id="lookupPanel" class="lookup-panel">
+      <!-- 3-Way Search Filters -->
+      <div class="filter-grid">
+        <div>
+          <label class="section-title">FILTER BY TAG #</label>
+          <input type="text" id="lookupTagInput" placeholder="Filter Tag..." />
+        </div>
+        <div>
+          <label class="section-title">FILTER BY INITIALS</label>
+          <input type="text" id="lookupInitialsInput" placeholder="Filter Initials..." />
+        </div>
+        <div>
+          <label class="section-title">FILTER BY CATEGORY</label>
+          <select id="lookupCategorySelect">
+            <option value="">-- All Categories --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Result Dropdown -->
+      <div style="margin-bottom: 12px;">
+        <label class="section-title">SELECT INDIVIDUAL INSPECTION *</label>
+        <select id="inspectionDropdown">
+          <option value="">-- Choose an Option --</option>
+        </select>
+      </div>
+
+      <div id="selectedInspectionContainer"></div>
+    </div>
+
+    <div id="statusMsg" class="status-msg">Loading sheets...</div>
+
+    <div id="app" style="display: none;">
+      <!-- Main Header Form Grid -->
+      <div class="form-grid">
+        <div>
+          <label class="section-title" for="tagNumberInput">TAG NUMBER *</label>
+          <input type="text" id="tagNumberInput" placeholder="e.g. TAG-101" required />
+        </div>
+        <div>
+          <label class="section-title" for="initialsInput">INSPECTOR INITIALS *</label>
+          <input type="text" id="initialsInput" placeholder="e.g. JD" maxlength="5" required />
+        </div>
+        <div>
+          <label class="section-title" for="itemSelect">SELECT CATEGORY / TAB *</label>
+          <select id="itemSelect">
+            <option value="">-- Choose an Option --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Dynamic Checklist Container -->
+      <div id="checklistContainer" class="checklist-group" style="display: none;">
+        <label class="section-title" style="margin-bottom: 12px;">CHECKLIST ITEMS BY LOCATION</label>
+        <div id="checklistItems"></div>
+      </div>
+
+      <button id="submitBtn" class="btn-submit">Submit Inspection</button>
+    </div>
+  </div>
+
+  <script>
+    // Paste your Google Apps Script Web App URL below:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8TFsplCvHqdM3Ekh0Cq750QS-q2CLIPa5Julqu3P3zuEB16gC_yo90XO94ndO8vv7/exec";
+
+    let sheetData = {};
+    let fetchedHistory = [];
+
+    const statusMsg = document.getElementById('statusMsg');
+    const appEl = document.getElementById('app');
+    const itemSelect = document.getElementById('itemSelect');
+    const tagNumberInput = document.getElementById('tagNumberInput');
+    const initialsInput = document.getElementById('initialsInput');
+    const checklistContainer = document.getElementById('checklistContainer');
+    const checklistItems = document.getElementById('checklistItems');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const toggleLookupBtn = document.getElementById('toggleLookupBtn');
+    const lookupPanel = document.getElementById('lookupPanel');
+    const lookupTagInput = document.getElementById('lookupTagInput');
+    const lookupInitialsInput = document.getElementById('lookupInitialsInput');
+    const lookupCategorySelect = document.getElementById('lookupCategorySelect');
+    const inspectionDropdown = document.getElementById('inspectionDropdown');
+    const selectedInspectionContainer = document.getElementById('selectedInspectionContainer');
+
+    async function loadSheets() {
+      try {
+        const res = await fetch(SCRIPT_URL, { method: "GET", redirect: "follow" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        sheetData = await res.json();
+        const sheetNames = Object.keys(sheetData);
+
+        if (sheetNames.length === 0) {
+          statusMsg.innerText = "No sheets found.";
+          return;
+        }
+
+        itemSelect.innerHTML = '<option value="">-- Choose an Option --</option>';
+        lookupCategorySelect.innerHTML = '<option value="">-- All Categories --</option>';
+
+        sheetNames.forEach(sheetName => {
+          const opt1 = document.createElement('option');
+          opt1.value = sheetName;
+          opt1.innerText = sheetName;
+          itemSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = sheetName;
+          opt2.innerText = sheetName;
+          lookupCategorySelect.appendChild(opt2);
+        });
+
+        statusMsg.style.display = 'none';
+        appEl.style.display = 'block';
+      } catch (err) {
+        statusMsg.style.color = "var(--danger)";
+        statusMsg.innerText = "Failed to load data. Verify your Script URL.";
+      }
+    }
+
+    // Dynamic Tag Badges Update
+    tagNumberInput.addEventListener('input', () => {
+      const tagVal = tagNumberInput.value.trim() || "---";
+      document.querySelectorAll('.tag-display').forEach(el => {
+        el.innerText = tagVal;
+      });
+    });
+
+    itemSelect.addEventListener('change', () => {
+      const selected = itemSelect.value;
+      checklistItems.innerHTML = '';
+
+      if (!selected || !sheetData[selected] || sheetData[selected].length === 0) {
+        checklistContainer.style.display = 'none';
+        return;
+      }
+
+      const locationsMap = {};
+      sheetData[selected].forEach(row => {
+        const loc = row.location || 'Unassigned';
+        if (!locationsMap[loc]) locationsMap[loc] = [];
+        locationsMap[loc].push(row);
+      });
+
+      const currentTag = tagNumberInput.value.trim() || "---";
+
+      Object.keys(locationsMap).forEach(locName => {
+        const card = document.createElement('div');
+        card.className = 'location-card';
+
+        let itemsHtml = '';
+        locationsMap[locName].forEach(row => {
+          itemsHtml += `
+            <label class="check-item" title="${row.item}">
+              <div class="check-left">
+                <input type="checkbox" value="${row.item}" data-location="${row.location}" data-qty="${row.qty}">
+                <span class="item-name">${row.item}</span>
+                <span class="tag-badge tag-display">${currentTag}</span>
+              </div>
+              <span class="qty-badge">Qty: ${row.qty}</span>
+            </label>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="location-header">📍 ${locName}</div>
+          <div class="location-body">${itemsHtml}</div>
+        `;
+
+        checklistItems.appendChild(card);
+      });
+
+      checklistContainer.style.display = 'block';
+    });
+
+    // Toggle Lookup Panel
+    toggleLookupBtn.addEventListener('click', () => {
+      const isVisible = lookupPanel.style.display === 'block';
+      lookupPanel.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) {
+        fetchHistoryOptions();
+      }
+    });
+
+    // Trigger lookup options update on any filter input change
+    lookupTagInput.addEventListener('input', fetchHistoryOptions);
+    lookupInitialsInput.addEventListener('input', fetchHistoryOptions);
+    lookupCategorySelect.addEventListener('change', fetchHistoryOptions);
+
+    async function fetchHistoryOptions() {
+      const tagFilter = lookupTagInput.value.trim();
+      const initialsFilter = lookupInitialsInput.value.trim();
+      const categoryFilter = lookupCategorySelect.value;
+
+      inspectionDropdown.innerHTML = '<option value="">Loading inspections...</option>';
+      selectedInspectionContainer.innerHTML = '';
+
+      try {
+        const url = `${SCRIPT_URL}?action=history` + 
+          `&tagNumber=${encodeURIComponent(tagFilter)}` +
+          `&initials=${encodeURIComponent(initialsFilter)}` +
+          `&category=${encodeURIComponent(categoryFilter)}`;
+
+        const res = await fetch(url, { method: "GET", redirect: "follow" });
+        fetchedHistory = await res.json();
+
+        if (fetchedHistory.length === 0) {
+          inspectionDropdown.innerHTML = '<option value="">-- No Matching Inspections --</option>';
+          return;
+        }
+
+        inspectionDropdown.innerHTML = '<option value="">-- Select Matching Inspection --</option>';
+        fetchedHistory.forEach((item, index) => {
+          const dateStr = new Date(item.timestamp).toLocaleString();
+          const tagStr = item.tagNumber ? `[Tag: ${item.tagNumber}]` : '[No Tag]';
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.innerText = `${dateStr} | ${tagStr} - ${item.category} (${item.initials})`;
+          inspectionDropdown.appendChild(opt);
+        });
+      } catch (err) {
+        inspectionDropdown.innerHTML = '<option value="">Error loading records</option>';
+      }
+    }
+
+    // Render detailed results when an option is selected from the inspection dropdown
+    inspectionDropdown.addEventListener('change', () => {
+      const selectedIndex = inspectionDropdown.value;
+      selectedInspectionContainer.innerHTML = '';
+
+      if (selectedIndex === "" || !fetchedHistory[selectedIndex]) return;
+
+      const record = fetchedHistory[selectedIndex];
+      const dateStr = new Date(record.timestamp).toLocaleString();
+      const passedCount = record.details ? record.details.filter(d => d.checked).length : 0;
+      const totalCount = record.details ? record.details.length : 0;
+
+      let itemsHtml = '';
+      if (record.details && record.details.length > 0) {
+        record.details.forEach(item => {
+          const statusClass = item.checked ? 'chip-checked' : 'chip-unchecked';
+          const statusIcon = item.checked ? '✓' : '✗';
+          itemsHtml += `
+            <div class="history-item-chip ${statusClass}">
+              <span><strong>${item.location}:</strong> ${item.item}</span>
+              <span>${statusIcon}</span>
+            </div>
+          `;
+        });
+      } else {
+        itemsHtml = '<div style="color:var(--text-muted);">No detailed items found for this record.</div>';
+      }
+
+      selectedInspectionContainer.innerHTML = `
+        <div class="inspection-detail-card">
+          <div class="meta-grid">
+            <div><strong>Tag #:</strong> ${record.tagNumber || 'N/A'}</div>
+            <div><strong>Inspector:</strong> ${record.initials}</div>
+            <div><strong>Category:</strong> ${record.category}</div>
+            <div><strong>Date:</strong> ${dateStr}</div>
+          </div>
+          <div style="margin-bottom: 12px; font-weight: bold; font-size: 13px; color: var(--accent);">
+            Results Passed: ${passedCount} / ${totalCount} items
+          </div>
+          <div class="history-items-grid">
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    // Submit Form
+    submitBtn.addEventListener('click', async () => {
+      const tagNumber = tagNumberInput.value.trim();
+      const initials = initialsInput.value.trim();
+      const selectedItem = itemSelect.value;
+
+      if (!tagNumber) {
+        alert("Please enter a Tag Number.");
+        tagNumberInput.focus();
+        return;
+      }
+
+      if (!initials) {
+        alert("Please enter Inspector Initials.");
+        initialsInput.focus();
+        return;
+      }
+
+      if (!selectedItem) {
+        alert("Please select a Category / Tab.");
+        return;
+      }
+
+      const checkboxes = checklistItems.querySelectorAll('input[type="checkbox"]');
+      const checklistStatus = [];
+
+      checkboxes.forEach(cb => {
+        checklistStatus.push({
+          location: cb.getAttribute('data-location'),
+          item: cb.value,
+          qty: cb.getAttribute('data-qty'),
+          checked: cb.checked
+        });
+      });
+
+      const payload = {
+        action: "submitChecklist",
+        tagNumber: tagNumber,
+        initials: initials,
+        selectedItem: selectedItem,
+        checklist: checklistStatus
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Submitting...";
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.status === "success") {
+          alert("Inspection submitted successfully!");
+          location.reload();
+        } else {
+          alert("Submission error: " + result.message);
+        }
+      } catch (err) {
+        alert("Submission failed: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Submit Inspection";
+      }
+    });
+
+    loadSheets();
+  </script>
+</body>
+</html>
