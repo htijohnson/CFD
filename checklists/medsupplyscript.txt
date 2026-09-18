@@ -13,6 +13,8 @@ function doGet(e) {
     return createJsonResponse(getInspectionHistory());
   } else if (action === "inactive") {
     return createJsonResponse(getInactiveItems());
+  } else if (action === "deficits") {
+    return createJsonResponse(getDeficitReport());
   } else if (action === "moveItem") {
     const result = moveItemLocation(
       e.parameter.oldCabinet,
@@ -66,11 +68,8 @@ function processInspectionSubmission(payload) {
   if (!logSheet) {
     logSheet = ss.insertSheet("Inspection Log");
     logSheet.appendRow(["Timestamp", "Inspector", "Total Items", "Low Stock Count", "Items Details JSON"]);
-  } else {
-    // Ensure header row exists if empty
-    if (logSheet.getLastRow() === 0) {
-      logSheet.appendRow(["Timestamp", "Inspector", "Total Items", "Low Stock Count", "Items Details JSON"]);
-    }
+  } else if (logSheet.getLastRow() === 0) {
+    logSheet.appendRow(["Timestamp", "Inspector", "Total Items", "Low Stock Count", "Items Details JSON"]);
   }
 
   const items = payload.items || [];
@@ -90,10 +89,51 @@ function processInspectionSubmission(payload) {
     
   const itemsJson = JSON.stringify(items);
 
-  // Append entry including itemized JSON into Column E
+  // Append entry into Sheet
   logSheet.appendRow([formattedDate, payload.inspector, items.length, lowStockCount, itemsJson]);
 
-  // 2. Queue payload in ScriptProperties for the background timer
+  // 2. UPDATE INVENTORY SHEET WITH NEW STOCK QUANTITIES, EXPIRATION DATES, URL & SKU
+  const inventorySheet = ss.getSheetByName("Inventory");
+  if (inventorySheet) {
+    const data = inventorySheet.getDataRange().getValues();
+    
+    items.forEach(item => {
+      for (let r = 1; r < data.length; r++) {
+        // Match Cabinet (Col A), Shelf (Col B), and Item Name (Col C)
+        if (data[r][0] === item.cabinet && data[r][1] === item.shelf && data[r][2] === item.name) {
+          
+          // Update Current Stock (Col E / Column 5)
+          if (item.qty !== undefined) {
+            inventorySheet.getRange(r + 1, 5).setValue(item.qty);
+          }
+
+          // Update Expiration Date (Col F / Column 6)
+          if (item.exp !== undefined) {
+            let expValue = item.exp;
+            if (expValue && typeof expValue === 'string' && expValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              const parts = expValue.split('-');
+              expValue = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+            }
+            inventorySheet.getRange(r + 1, 6).setValue(expValue);
+          }
+
+          // Update URL (Col I / Column 9) if provided
+          if (item.url !== undefined) {
+            inventorySheet.getRange(r + 1, 9).setValue(item.url);
+          }
+
+          // Update SKU (Col J / Column 10) if provided
+          if (item.sku !== undefined) {
+            inventorySheet.getRange(r + 1, 10).setValue(item.sku);
+          }
+
+          break;
+        }
+      }
+    });
+  }
+
+  // 3. Queue payload in ScriptProperties for background timer
   const scriptProperties = PropertiesService.getScriptProperties();
   const submissionKey = "SUBMISSION_" + new Date().getTime();
   scriptProperties.setProperty(submissionKey, JSON.stringify({
@@ -103,7 +143,7 @@ function processInspectionSubmission(payload) {
     lowStockCount: lowStockCount
   }));
 
-  return { status: "success", message: "Inspection logged successfully" };
+  return { status: "success", message: "Inspection logged and inventory updated successfully" };
 }
 
 // ==========================================
@@ -137,9 +177,11 @@ function sendDelayedEmailReport() {
               <th>Cabinet</th>
               <th>Shelf</th>
               <th>Item Name</th>
+              <th>SKU</th>
               <th>Min Qty</th>
               <th>Current Qty</th>
               <th>Exp. Date</th>
+              <th>Order Link</th>
             </tr>
         `;
 
@@ -148,15 +190,18 @@ function sendDelayedEmailReport() {
           const min = parseInt(item.min !== undefined ? item.min : item.minQty, 10) || 0;
           const isLow = qty < min;
           const rowBg = isLow ? "background-color:#ffe6e6;" : "";
+          const itemUrl = item.url ? `<a href="${item.url}" target="_blank">Reorder Link</a>` : 'N/A';
           
           bodyHtml += `
             <tr style="${rowBg}">
               <td>${item.cabinet || 'N/A'}</td>
               <td>${item.shelf || 'N/A'}</td>
               <td><strong>${item.name || item.itemName}</strong></td>
+              <td>${item.sku || 'N/A'}</td>
               <td>${min}</td>
               <td>${qty}</td>
               <td>${item.exp || item.expDate || 'N/A'}</td>
+              <td>${itemUrl}</td>
             </tr>
           `;
         });
@@ -169,7 +214,6 @@ function sendDelayedEmailReport() {
           htmlBody: bodyHtml
         });
 
-        // Delete processed submission from queue
         scriptProperties.deleteProperty(key);
       }
     }
@@ -189,7 +233,10 @@ function getInventoryData() {
   const inventory = {};
 
   for (let i = 1; i < data.length; i++) {
-    const [cabinet, shelf, name, minQty, currentQty, expDate, status] = data[i];
+    // Array columns:
+    // [0] A: Cabinet | [1] B: Shelf | [2] C: Name | [3] D: MinQty | [4] E: CurrentQty
+    // [5] F: ExpDate | [6] G: ExpDate Actual | [7] H: Active/Date | [8] I: URL | [9] J: SKU
+    const [cabinet, shelf, name, minQty, currentQty, expDate, expDate2, status, url, sku] = data[i];
     
     if (status === "Inactive") continue;
 
@@ -200,7 +247,10 @@ function getInventoryData() {
     if (expDate instanceof Date) {
       formattedExp = Utilities.formatDate(expDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
     } else if (expDate) {
-      formattedExp = String(expDate);
+      const d = new Date(expDate);
+      formattedExp = !isNaN(d.getTime()) 
+        ? Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd")
+        : String(expDate);
     }
 
     inventory[cabinet][shelf].push({
@@ -208,11 +258,73 @@ function getInventoryData() {
       minQty: minQty,
       currentQty: currentQty,
       expDate: formattedExp,
+      url: url || "",
+      sku: sku || "",
       checked: false
     });
   }
 
   return inventory;
+}
+
+function getDeficitReport() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+
+  const deficits = [];
+  const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+
+  for (let i = 1; i < data.length; i++) {
+    // Column indices updated to match Google Sheet columns:
+    // [8] I: URL | [9] J: SKU
+    const cabinet = data[i][0];
+    const shelf = data[i][1];
+    const name = data[i][2];
+    const minQty = data[i][3];
+    const currentQty = data[i][4];
+    const expDate = data[i][5];
+    const status = data[i][7];
+    const url = data[i][8];
+    const sku = data[i][9];
+
+    if (status === "Inactive") continue;
+
+    const min = parseInt(minQty, 10) || 0;
+    const qty = parseInt(currentQty, 10) || 0;
+
+    let formattedExp = "";
+    if (expDate instanceof Date) {
+      formattedExp = Utilities.formatDate(expDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    } else if (expDate) {
+      const d = new Date(expDate);
+      formattedExp = !isNaN(d.getTime()) 
+        ? Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd")
+        : String(expDate);
+    }
+
+    const isLowStock = qty < min;
+    const isExpired = formattedExp !== "" && formattedExp <= todayStr;
+
+    if (isLowStock || isExpired) {
+      deficits.push({
+        cabinet: cabinet,
+        shelf: shelf,
+        name: name,
+        minQty: min,
+        currentQty: qty,
+        deficitQty: Math.max(0, min - qty),
+        expDate: formattedExp,
+        url: url || "",
+        sku: sku || "",
+        reason: isLowStock && isExpired ? "Low Stock & Expired" : (isLowStock ? "Low Stock" : "Expired")
+      });
+    }
+  }
+
+  return deficits;
 }
 
 function getInspectionHistory() {
@@ -223,7 +335,7 @@ function getInspectionHistory() {
 
   const history = [];
   for (let i = data.length - 1; i >= 1; i--) {
-    let rawItems = data[i][4]; // Items JSON string stored in Column E
+    let rawItems = data[i][4];
     let itemsParsed = [];
 
     if (rawItems) {
@@ -252,8 +364,14 @@ function getInactiveItems() {
   
   const inactive = [];
   for (let i = 1; i < data.length; i++) {
-    if (data[i][6] === "Inactive") {
-      inactive.push({ cabinet: data[i][0], shelf: data[i][1], name: data[i][2] });
+    if (data[i][7] === "Inactive") {
+      inactive.push({ 
+        cabinet: data[i][0], 
+        shelf: data[i][1], 
+        name: data[i][2],
+        url: data[i][8] || "",
+        sku: data[i][9] || ""
+      });
     }
   }
   return inactive;
@@ -261,7 +379,18 @@ function getInactiveItems() {
 
 function addNewItem(item) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Inventory");
-  sheet.appendRow([item.cabinet, item.shelf, item.name, item.minQty, item.currentQty, item.expDate || "", "Active"]);
+  sheet.appendRow([
+    item.cabinet, 
+    item.shelf, 
+    item.name, 
+    item.minQty, 
+    item.currentQty, 
+    item.expDate || "", 
+    "",          // Column G: Exp Date 2 / Extra
+    "Active",    // Column H: Status
+    item.url || "", // Column I: URL
+    item.sku || ""  // Column J: SKU
+  ]);
   return { status: "success" };
 }
 
@@ -271,7 +400,7 @@ function markItemInactive(item) {
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === item.cabinet && data[i][1] === item.shelf && data[i][2] === item.name) {
-      sheet.getRange(i + 1, 7).setValue("Inactive");
+      sheet.getRange(i + 1, 8).setValue("Inactive");
       return { status: "success" };
     }
   }
@@ -284,7 +413,7 @@ function reactivateItem(item) {
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === item.cabinet && data[i][1] === item.shelf && data[i][2] === item.name) {
-      sheet.getRange(i + 1, 7).setValue("Active");
+      sheet.getRange(i + 1, 8).setValue("Active");
       return { status: "success" };
     }
   }
