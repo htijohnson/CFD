@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Coburg Fire District | Official Website</title>
+  
+  <!-- Browser Favicon -->
+  <link rel="icon" type="image/png" href="https://www.coburgfire.org/site/images/coburg-fire-logo.png">
+
+  <!-- jQuery for LRAPA Advisory script compatibility -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -28,23 +34,53 @@
     Skip to main content
   </a>
 
-  <!-- Top Emergency & Utility Bar (Lane Fire Style) -->
-  <div class="bg-fireRed text-white py-2 px-4 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center text-sm font-semibold gap-2">
-      <div class="flex items-center gap-2">
+  <!-- Expanded Top Emergency & Utility Bar -->
+  <div class="bg-fireRed text-white py-4 px-4 shadow-md">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 items-center text-sm font-semibold gap-4">
+      
+      <!-- Left: Emergency Info -->
+      <div class="flex items-center gap-2 justify-center md:justify-start">
         <span class="bg-white text-fireRed text-xs px-2 py-0.5 rounded uppercase font-black">Emergency</span>
         <span>FOR EMERGENCIES DIAL 911</span>
       </div>
-      <div class="flex items-center gap-4 text-xs sm:text-sm">
+
+      <!-- Center Stack: Burn Permit Link + Centered Double-Sized Green Tile -->
+      <div class="flex flex-col items-center gap-2 text-center">
+        <!-- Burn Permit Link (approx 140px / w-36 wide) -->
+        <a href="resources.html" data-page="resources.html" class="nav-link w-36 inline-block bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs sm:text-sm py-1.5 rounded-full uppercase tracking-wider font-bold transition focus:outline-none focus:ring-2 focus:ring-amber-400">
+          🔥 Burn Permit
+        </a>
+
+        <!-- Live Green Tile: Twice as wide as the Burn Permit box (w-72 / max-w-xs) -->
+        <div id="elsewhere-tile" class="w-72 max-w-xs bg-emerald-600 border border-emerald-400/50 text-white rounded-lg p-2.5 shadow-lg flex flex-col items-center justify-center transition hover:bg-emerald-500">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+            </span>
+            <span class="text-xs font-black uppercase tracking-wider text-emerald-100">Burn Status for Coburg Fire District</span>
+          </div>
+          <div id="tile-status-display" class="text-sm font-black mt-0.5 text-white">
+            Allowed 12 PM - 5 PM
+          </div>
+          <div id="tile-note-display" class="text-[10px] text-emerald-100 font-medium leading-tight mt-0.5">
+            Always remain with fire till fully extinguished
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Non-Emergency Line -->
+      <div class="flex items-center gap-4 text-xs sm:text-sm justify-center md:justify-end">
         <span>Non-Emergency Dispatch: <a href="tel:5416825111" class="underline hover:text-amber-200">541-682-5111</a></span>
       </div>
+
     </div>
   </div>
 
   <!-- Header & Brand Logo -->
   <header class="bg-white border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <a href="http://www.coburgfire.org/index.html" target="_self" class="flex items-center gap-4 group focus:outline-none focus:ring-2 focus:ring-fireRed p-1 rounded">
+      <a href="home_content.html" data-page="home_content.html" class="nav-link flex items-center gap-4 group focus:outline-none focus:ring-2 focus:ring-fireRed p-1 rounded">
         <div class="w-16 h-16 bg-fireRed rounded-lg flex items-center justify-center shadow-sm group-hover:bg-fireRedDark transition overflow-hidden p-1">
           <img src="https://www.coburgfire.org/site/images/coburg-fire-logo.png" alt="Coburg Fire District Logo" class="w-full h-full object-contain">
         </div>
@@ -60,19 +96,19 @@
     </div>
   </header>
 
-  <!-- Main Dark Navigation Bar (Lane Fire Style) -->
+  <!-- Main Dark Navigation Bar -->
   <nav class="bg-navyDark text-white sticky top-0 z-40 shadow-lg" aria-label="Main Navigation">
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex justify-between items-center">
-        <!-- Desktop Nav Items with requested URLs opening in same window -->
+        <!-- Desktop Nav Items -->
         <ul class="hidden lg:flex items-center space-x-1">
-          <li><a href="http://www.coburgfire.org/index.html" target="_self" class="block py-3.5 px-4 text-sm font-bold bg-fireRed text-white focus:outline-none focus:ring-2 focus:ring-amber-400" aria-current="page">Home</a></li>
-          <li><a href="http://www.coburgfire.org/aboutus.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">About Us</a></li>
-          <li><a href="http://www.coburgfire.org/meeting.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Meeting</a></li>
-          <li><a href="http://www.coburgfire.org/jobs.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Jobs</a></li>
-          <li><a href="http://www.coburgfire.org/resources.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Resources</a></li>
-          <li><a href="http://www.coburgfire.org/requiredpostings.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Required Postings</a></li>
-          <li><a href="http://www.coburgfire.org/contact.html" target="_self" class="block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Contact</a></li>
+          <li><a href="home_content.html" data-page="home_content.html" class="nav-link block py-3.5 px-4 text-sm font-bold bg-fireRed text-white focus:outline-none focus:ring-2 focus:ring-amber-400">Home</a></li>
+          <li><a href="aboutus.html" data-page="aboutus.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">About Us</a></li>
+          <li><a href="meeting.html" data-page="meeting.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Meeting</a></li>
+          <li><a href="jobs.html" data-page="jobs.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Jobs</a></li>
+          <li><a href="resources.html" data-page="resources.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Resources</a></li>
+          <li><a href="requiredpostings.html" data-page="requiredpostings.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Required Postings</a></li>
+          <li><a href="contact.html" data-page="contact.html" class="nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400">Contact</a></li>
         </ul>
 
         <!-- Mobile Menu Toggle Button -->
@@ -84,73 +120,75 @@
 
       <!-- Mobile Navigation Links -->
       <div id="mobile-menu" class="hidden lg:hidden pb-4 pt-2 border-t border-navyMedium space-y-1">
-        <a href="http://www.coburgfire.org/index.html" target="_self" class="block py-2 px-3 text-base font-bold bg-fireRed text-white rounded" aria-current="page">Home</a>
-        <a href="http://www.coburgfire.org/aboutus.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">About Us</a>
-        <a href="http://www.coburgfire.org/meeting.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Meeting</a>
-        <a href="http://www.coburgfire.org/jobs.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Jobs</a>
-        <a href="http://www.coburgfire.org/resources.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Resources</a>
-        <a href="http://www.coburgfire.org/requiredpostings.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Required Postings</a>
-        <a href="http://www.coburgfire.org/contact.html" target="_self" class="block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Contact</a>
+        <a href="home_content.html" data-page="home_content.html" class="nav-link block py-2 px-3 text-base font-bold bg-fireRed text-white rounded">Home</a>
+        <a href="aboutus.html" data-page="aboutus.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">About Us</a>
+        <a href="meeting.html" data-page="meeting.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Meeting</a>
+        <a href="jobs.html" data-page="jobs.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Jobs</a>
+        <a href="resources.html" data-page="resources.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Resources</a>
+        <a href="requiredpostings.html" data-page="requiredpostings.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Required Postings</a>
+        <a href="contact.html" data-page="contact.html" class="nav-link block py-2 px-3 text-base font-medium text-slate-200 hover:bg-navyMedium rounded">Contact</a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero Banner Area -->
-  <section class="relative bg-navyMedium text-white py-16 px-4 border-b-4 border-fireRed">
-    <div class="max-w-5xl mx-auto text-center space-y-4">
-      <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">Coburg Fire District</h1>
-      <p class="text-base sm:text-lg text-slate-200 max-w-2xl mx-auto">
-        Providing emergency medical response, fire protection, and community risk reduction services.
-      </p>
-    </div>
-  </section>
+  <!-- Dynamic Content Area -->
+  <div id="dynamic-content-area" class="flex-grow flex flex-col">
 
-  <!-- Main Content Body -->
-  <main id="main-content" class="flex-grow max-w-7xl mx-auto px-4 py-10 w-full space-y-10">
-
-    <!-- Quick Action / Card Section -->
-    <section aria-labelledby="quick-links-heading">
-      <h2 id="quick-links-heading" class="text-2xl font-black text-navyDark uppercase tracking-tight mb-6 border-b-2 border-fireRed pb-2">
-        District Quick Links
-      </h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-        <a href="http://www.coburgfire.org/meeting.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Board Meetings</h3>
-          <p class="text-sm text-slate-600">Access public board meeting notices, schedules, agendas, and minutes.</p>
-        </a>
-
-        <a href="http://www.coburgfire.org/resources.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Public Resources</h3>
-          <p class="text-sm text-slate-600">Find outdoor burning information, permit guidelines, and fire safety tips.</p>
-        </a>
-
-        <a href="http://www.coburgfire.org/jobs.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Employment & Careers</h3>
-          <p class="text-sm text-slate-600">Explore career opportunities, firefighter recruitments, and job postings.</p>
-        </a>
-
-        <a href="http://www.coburgfire.org/requiredpostings.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Required Postings</h3>
-          <p class="text-sm text-slate-600">View official legal notices, district disclosures, and state postings.</p>
-        </a>
-
-        <a href="http://www.coburgfire.org/aboutus.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">About Our District</h3>
-          <p class="text-sm text-slate-600">Learn about our mission, station facilities, leadership, and personnel.</p>
-        </a>
-
-        <a href="http://www.coburgfire.org/contact.html" target="_self" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
-          <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Contact Us</h3>
-          <p class="text-sm text-slate-600">Get station address details, non-emergency contacts, and inquiry forms.</p>
-        </a>
-
+    <!-- Default Home Hero Banner -->
+    <section class="relative bg-navyMedium text-white py-16 px-4 border-b-4 border-fireRed">
+      <div class="max-w-5xl mx-auto text-center space-y-4">
+        <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">Coburg Fire District</h1>
+        <p class="text-base sm:text-lg text-slate-200 max-w-2xl mx-auto">
+          Providing emergency medical response, fire protection, and community risk reduction services.
+        </p>
       </div>
     </section>
 
-  </main>
+    <!-- Default Home Main Content -->
+    <main id="main-content" class="flex-grow max-w-7xl mx-auto px-4 py-10 w-full space-y-10">
+      <section aria-labelledby="quick-links-heading">
+        <h2 id="quick-links-heading" class="text-2xl font-black text-navyDark uppercase tracking-tight mb-6 border-b-2 border-fireRed pb-2">
+          District Quick Links
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-  <!-- Footer (Lane Fire Inspired) -->
+          <a href="meeting.html" data-page="meeting.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Board Meetings</h3>
+            <p class="text-sm text-slate-600">Access public board meeting notices, schedules, agendas, and minutes.</p>
+          </a>
+
+          <a href="resources.html" data-page="resources.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Public Resources</h3>
+            <p class="text-sm text-slate-600">Find outdoor burning information, permit guidelines, and fire safety tips.</p>
+          </a>
+
+          <a href="jobs.html" data-page="jobs.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Employment & Careers</h3>
+            <p class="text-sm text-slate-600">Explore career opportunities, firefighter recruitments, and job postings.</p>
+          </a>
+
+          <a href="requiredpostings.html" data-page="requiredpostings.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Required Postings</h3>
+            <p class="text-sm text-slate-600">View official legal notices, district disclosures, and state postings.</p>
+          </a>
+
+          <a href="aboutus.html" data-page="aboutus.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">About Our District</h3>
+            <p class="text-sm text-slate-600">Learn about our mission, station facilities, leadership, and personnel.</p>
+          </a>
+
+          <a href="contact.html" data-page="contact.html" class="nav-link bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-fireRed hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-fireRed">
+            <h3 class="text-xl font-bold text-navyDark group-hover:text-fireRed transition mb-2">Contact Us</h3>
+            <p class="text-sm text-slate-600">Get station address details, non-emergency contacts, and inquiry forms.</p>
+          </a>
+
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Persistent Footer -->
   <footer class="bg-navyDark text-slate-300 py-10 mt-auto border-t-4 border-fireRed">
     <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
@@ -162,13 +200,13 @@
       <div>
         <h3 class="text-white font-bold text-lg mb-3">Navigation Links</h3>
         <ul class="text-sm space-y-1.5">
-          <li><a href="http://www.coburgfire.org/index.html" target="_self" class="hover:text-amber-300 underline">Home</a></li>
-          <li><a href="http://www.coburgfire.org/aboutus.html" target="_self" class="hover:text-amber-300 underline">About Us</a></li>
-          <li><a href="http://www.coburgfire.org/meeting.html" target="_self" class="hover:text-amber-300 underline">Meeting</a></li>
-          <li><a href="http://www.coburgfire.org/jobs.html" target="_self" class="hover:text-amber-300 underline">Jobs</a></li>
-          <li><a href="http://www.coburgfire.org/resources.html" target="_self" class="hover:text-amber-300 underline">Resources</a></li>
-          <li><a href="http://www.coburgfire.org/requiredpostings.html" target="_self" class="hover:text-amber-300 underline">Required Postings</a></li>
-          <li><a href="http://www.coburgfire.org/contact.html" target="_self" class="hover:text-amber-300 underline">Contact</a></li>
+          <li><a href="home_content.html" data-page="home_content.html" class="nav-link hover:text-amber-300 underline">Home</a></li>
+          <li><a href="aboutus.html" data-page="aboutus.html" class="nav-link hover:text-amber-300 underline">About Us</a></li>
+          <li><a href="meeting.html" data-page="meeting.html" class="nav-link hover:text-amber-300 underline">Meeting</a></li>
+          <li><a href="jobs.html" data-page="jobs.html" class="nav-link hover:text-amber-300 underline">Jobs</a></li>
+          <li><a href="resources.html" data-page="resources.html" class="nav-link hover:text-amber-300 underline">Resources</a></li>
+          <li><a href="requiredpostings.html" data-page="requiredpostings.html" class="nav-link hover:text-amber-300 underline">Required Postings</a></li>
+          <li><a href="contact.html" data-page="contact.html" class="nav-link hover:text-amber-300 underline">Contact</a></li>
         </ul>
       </div>
       <div>
@@ -182,15 +220,102 @@
     </div>
   </footer>
 
+  <!-- Dynamic Page Loader Script -->
   <script>
+    const contentContainer = document.getElementById('dynamic-content-area');
     const menuBtn = document.getElementById('menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
 
+    // Mobile menu toggle
     menuBtn.addEventListener('click', () => {
       const expanded = menuBtn.getAttribute('aria-expanded') === 'true';
       menuBtn.setAttribute('aria-expanded', !expanded);
       mobileMenu.classList.toggle('hidden');
     });
+
+    // Save initial home content HTML
+    const initialHomeContent = contentContainer.innerHTML;
+
+    async function loadPage(pageUrl) {
+      if (!pageUrl || pageUrl === 'home_content.html' || pageUrl === 'index.html') {
+        contentContainer.innerHTML = initialHomeContent;
+        updateActiveNav('home_content.html');
+        attachLinkEvents();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      try {
+        const response = await fetch(pageUrl);
+        if (!response.ok) throw new Error('Page not found');
+        const htmlText = await response.text();
+
+        // Extract body content or main section from fetched file
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        const newMain = doc.querySelector('main') || doc.body;
+
+        const heroSection = doc.querySelector('section');
+        let combinedHTML = '';
+        if (heroSection) combinedHTML += heroSection.outerHTML;
+        if (newMain) combinedHTML += newMain.outerHTML;
+
+        contentContainer.innerHTML = combinedHTML || htmlText;
+        updateActiveNav(pageUrl);
+        attachLinkEvents();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        console.error('Error loading page:', err);
+      }
+    }
+
+    function updateActiveNav(activePage) {
+      document.querySelectorAll('nav ul li a').forEach(link => {
+        const href = link.getAttribute('data-page');
+        if (href === activePage || (activePage === 'home_content.html' && href.includes('home'))) {
+          link.className = 'nav-link block py-3.5 px-4 text-sm font-bold bg-fireRed text-white focus:outline-none focus:ring-2 focus:ring-amber-400';
+          link.setAttribute('aria-current', 'page');
+        } else {
+          link.className = 'nav-link block py-3.5 px-4 text-sm font-semibold hover:bg-navyMedium hover:text-amber-300 transition focus:outline-none focus:ring-2 focus:ring-amber-400';
+          link.removeAttribute('aria-current');
+        }
+      });
+    }
+
+    function attachLinkEvents() {
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.onclick = (e) => {
+          e.preventDefault();
+          const targetPage = link.getAttribute('data-page') || link.getAttribute('href');
+          
+          // Close mobile menu if open
+          mobileMenu.classList.add('hidden');
+          menuBtn.setAttribute('aria-expanded', 'false');
+
+          loadPage(targetPage);
+        };
+      });
+    }
+
+    // Function to update the tile dynamically if LRAPA's data object is available
+    function parseElsewhereRecord(advisoryData) {
+      if (typeof OutdoorBurningAdvisory !== 'undefined' && OutdoorBurningAdvisory.TheRecords) {
+        jQuery.each(OutdoorBurningAdvisory.TheRecords, function(idx, obj) {
+          if (obj.AdvisoryAreaNm === "Elsewhere in Lane Co.") {
+            $('#tile-status-display').text(obj.BYBAdvisoryDisplay || 'Allowed 12 PM - 5 PM');
+            $('#tile-note-display').text(obj.BackyardBurnAdvisoryMessage || 'Always remain with fire till fully extinguished');
+            
+            // Adjust dynamic color based on status
+            if (obj.BYBAdvisoryDisplay && obj.BYBAdvisoryDisplay.toLowerCase().includes('prohibited')) {
+              $('#elsewhere-tile').removeClass('bg-emerald-600 border-emerald-400/50').addClass('bg-red-700 border-red-500/50');
+            }
+          }
+        });
+      }
+    }
+
+    // Initialize link click handlers
+    attachLinkEvents();
   </script>
 </body>
 </html>
