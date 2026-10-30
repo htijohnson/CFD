@@ -101,6 +101,16 @@
       font-weight: bold;
       font-size: 14px;
     }
+    .instructions-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: #007bff;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    .instructions-link:hover {
+      color: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -190,7 +200,7 @@
       .then(data => {
         if (data.status === "success") {
           statusDiv.style.color = "#28a745";
-          statusDiv.textContent = "Response submitted successfully!";
+          statusDiv.innerHTML = 'Response submitted successfully!<br><a href="https://www.coburgfire.org/pulsepoint/PulsePointInstructions.pdf" target="_blank" class="instructions-link">Click here for instructions</a>';
           document.getElementById("questionsForm").reset();
         } else {
           statusDiv.style.color = "#d9534f";
