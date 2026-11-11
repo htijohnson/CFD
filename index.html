@@ -8,7 +8,7 @@
   <!-- Browser Favicon -->
   <link rel="icon" type="image/png" href="https://www.coburgfire.org/site/images/coburg-fire-logo.png">
 
-  <!-- jQuery for LRAPA Advisory script compatibility -->
+  <!-- jQuery for script compatibility -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -44,29 +44,12 @@
         <span>FOR EMERGENCIES DIAL 911</span>
       </div>
 
-      <!-- Center Stack: Burn Permit Link + Centered Double-Sized Green Tile -->
+      <!-- Center Stack: Burn Permit Link -->
       <div class="flex flex-col items-center gap-2 text-center">
-        <!-- Burn Permit Link (approx 140px / w-36 wide) -->
+        <!-- Burn Permit Link -->
         <a href="resources.html" data-page="resources.html" class="nav-link w-36 inline-block bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs sm:text-sm py-1.5 rounded-full uppercase tracking-wider font-bold transition focus:outline-none focus:ring-2 focus:ring-amber-400">
           🔥 Burn Permit
         </a>
-
-        <!-- Live Green Tile: Twice as wide as the Burn Permit box (w-72 / max-w-xs) -->
-        <div id="elsewhere-tile" class="w-72 max-w-xs bg-emerald-600 border border-emerald-400/50 text-white rounded-lg p-2.5 shadow-lg flex flex-col items-center justify-center transition hover:bg-emerald-500">
-          <div class="flex items-center gap-2">
-            <span class="relative flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-            </span>
-            <span class="text-xs font-black uppercase tracking-wider text-emerald-100">Burn Status for Coburg Fire District</span>
-          </div>
-          <div id="tile-status-display" class="text-sm font-black mt-0.5 text-white">
-            Allowed 12 PM - 5 PM
-          </div>
-          <div id="tile-note-display" class="text-[10px] text-emerald-100 font-medium leading-tight mt-0.5">
-            Always remain with fire till fully extinguished
-          </div>
-        </div>
       </div>
 
       <!-- Right: Non-Emergency Line -->
@@ -295,23 +278,6 @@
           loadPage(targetPage);
         };
       });
-    }
-
-    // Function to update the tile dynamically if LRAPA's data object is available
-    function parseElsewhereRecord(advisoryData) {
-      if (typeof OutdoorBurningAdvisory !== 'undefined' && OutdoorBurningAdvisory.TheRecords) {
-        jQuery.each(OutdoorBurningAdvisory.TheRecords, function(idx, obj) {
-          if (obj.AdvisoryAreaNm === "Elsewhere in Lane Co.") {
-            $('#tile-status-display').text(obj.BYBAdvisoryDisplay || 'Allowed 12 PM - 5 PM');
-            $('#tile-note-display').text(obj.BackyardBurnAdvisoryMessage || 'Always remain with fire till fully extinguished');
-            
-            // Adjust dynamic color based on status
-            if (obj.BYBAdvisoryDisplay && obj.BYBAdvisoryDisplay.toLowerCase().includes('prohibited')) {
-              $('#elsewhere-tile').removeClass('bg-emerald-600 border-emerald-400/50').addClass('bg-red-700 border-red-500/50');
-            }
-          }
-        });
-      }
     }
 
     // Initialize link click handlers
