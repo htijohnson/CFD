@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Recruit Information</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #f4f7f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .form-container {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 480px;
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      color: #222;
+      font-size: 24px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+      width: 100%;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #444;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    .status-message {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+    }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="form-container">
+  <!-- STEP 1: PIN Gate -->
+  <div id="pinGate">
+    <h2>Access Required</h2>
+    <form id="pinForm">
+      <div class="form-group">
+        <label for="pinInput">Enter Pin (Station Door Access Code)</label>
+        <input type="password" id="pinInput" required placeholder="Enter PIN" autocomplete="off">
+      </div>
+      <button type="submit" id="unlockBtn">Unlock Form</button>
+      <div id="pinStatus" class="status-message"></div>
+    </form>
+  </div>
+
+  <!-- STEP 2: Main Form (Hidden until PIN is verified) -->
+  <div id="formSection" class="hidden">
+    <h2>Contact Information</h2>
+    <form id="contactForm">
+      <input type="hidden" name="sheetName" value="Form Responses 1">
+      <input type="hidden" id="verifiedPin" name="pin" value="">
+
+      <div class="row">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input type="text" id="firstName" name="First Name" required placeholder="Jane">
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" name="Last Name" required placeholder="Doe">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="Email Address" required placeholder="jane.doe@example.com">
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="Cell Phone" required placeholder="541-555-0199">
+      </div>
+
+      <div class="form-group">
+        <label for="mailingStreet">Mailing Street Address</label>
+        <input type="text" id="mailingStreet" name="Mailing Street Address" required placeholder="123 Main St">
+      </div>
+
+      <div class="form-group">
+        <label for="mailingCityStateZip">Mailing City, State Zip Code</label>
+        <input type="text" id="mailingCityStateZip" name="Mailing City, State Zip Code" required placeholder="Eugene, OR 97404">
+      </div>
+
+      <button type="submit" id="submitBtn">Submit</button>
+      <div id="statusMessage" class="status-message"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbw9Ipdpy1g2UJOhDffbjn2nqbdKnyiyJxvWTsi8k8MDPSbgtyJYTQqE4aCJfZt-qSAK/exec';
+
+  const pinGate = document.getElementById('pinGate');
+  const pinForm = document.getElementById('pinForm');
+  const pinInput = document.getElementById('pinInput');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const pinStatus = document.getElementById('pinStatus');
+
+  const formSection = document.getElementById('formSection');
+  const contactForm = document.getElementById('contactForm');
+  const verifiedPinField = document.getElementById('verifiedPin');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusMessage = document.getElementById('statusMessage');
+
+  // Step 1: Verify PIN before showing the form
+  pinForm.addEventListener('submit', e => {
+    e.preventDefault();
+
+    const enteredPin = pinInput.value.trim();
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Checking PIN...';
+    pinStatus.style.display = 'none';
+
+    const checkData = new FormData();
+    checkData.append('action', 'verifyPin');
+    checkData.append('pin', enteredPin);
+
+    fetch(scriptURL, {
+      method: 'POST',
+      body: checkData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.result === 'success') {
+        verifiedPinField.value = enteredPin;
+        pinGate.classList.add('hidden');
+        formSection.classList.remove('hidden');
+      } else {
+        pinStatus.textContent = data.error || 'Invalid PIN. Please try again.';
+        pinStatus.className = 'status-message error';
+        pinStatus.style.display = 'block';
+        pinInput.value = '';
+        pinInput.focus();
+      }
+    })
+    .catch(error => {
+      pinStatus.textContent = 'Network error verifying PIN. Please try again.';
+      pinStatus.className = 'status-message error';
+      pinStatus.style.display = 'block';
+      console.error('Error:', error.message);
+    })
+    .finally(() => {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'Unlock Form';
+    });
+  });
+
+  // Step 2: Submit the unlocked form
+  contactForm.addEventListener('submit', e => {
+    e.preventDefault();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+    statusMessage.style.display = 'none';
+
+    fetch(scriptURL, {
+      method: 'POST',
+      body: new FormData(contactForm)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.result === 'success') {
+        const savedPin = verifiedPinField.value;
+        contactForm.reset();
+        verifiedPinField.value = savedPin; // Preserve PIN if submitting another entry
+        statusMessage.textContent = 'Information saved to Form Responses 1!';
+        statusMessage.className = 'status-message success';
+        statusMessage.style.display = 'block';
+      } else {
+        statusMessage.textContent = data.error || 'Submission rejected.';
+        statusMessage.className = 'status-message error';
+        statusMessage.style.display = 'block';
+      }
+    })
+    .catch(error => {
+      statusMessage.textContent = 'Network error submitting form. Please try again.';
+      statusMessage.className = 'status-message error';
+      statusMessage.style.display = 'block';
+      console.error('Error:', error.message);
+    })
+    .finally(() => {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+    });
+  });
+</script>
+
+</body>
+</html>
