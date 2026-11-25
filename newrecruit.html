@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coburg Fire District - Personnel Information Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cabinet+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0f1115;
+      --bg-card: #161920;
+      --bg-card-elevated: #1c2029;
+      --border-color: rgba(255, 255, 255, 0.09);
+      --primary: #dc2626;
+      --primary-hover: #b91c1c;
+      --primary-glow: rgba(220, 38, 38, 0.24);
+      --accent: #f59e0b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --success: #34d399;
+      --error: #f87171;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Cabinet Grotesk', 'Inter', sans-serif;
+      --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 28px 18px 56px 18px;
+      min-height: 100vh;
+      letter-spacing: -0.01em;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -120px;
+      right: -120px;
+      width: 440px;
+      height: 440px;
+      background: radial-gradient(circle, rgba(220, 38, 38, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pin-card {
+      max-width: 440px;
+      margin: 56px auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 26px 28px;
+      box-shadow: 0 18px 40px -15px rgba(0, 0, 0, 0.65);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    .subtitle {
+      margin: 0 0 18px 0;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .notice-banner {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 22px;
+      font-size: 0.86rem;
+      color: #fde68a;
+      line-height: 1.45;
+    }
+
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 22px 26px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.55);
+    }
+
+    .section-title {
+      margin: 0 0 16px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px 16px;
+    }
+
+    @media (max-width: 680px) {
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    .grid-2 .field-group,
+    .grid-3 .field-group {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .req {
+      color: var(--primary);
+      font-weight: 700;
+      margin-left: 2px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: #0f1115;
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-family: var(--font-sans);
+      transition: var(--transition);
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      padding-top: 4px;
+    }
+
+    .radio-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+
+    .radio-option input[type="radio"] {
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .btn-clear-radio {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-clear-radio:hover {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .submit-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    button.primary-btn {
+      background-color: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    button.primary-btn:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button.primary-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.secondary-btn {
+      background-color: rgba(255, 255, 255, 0.07);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 11px 18px;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    button.secondary-btn:hover {
+      background-color: rgba(255, 255, 255, 0.13);
+    }
+
+    .status-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: none;
+    }
+
+    .status-box.error {
+      display: block;
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: var(--error);
+    }
+
+    .status-box.success {
+      display: block;
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: var(--success);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Personnel Information Form -->
+  <div id="formContainer" class="container">
+    <div class="badge">Coburg Fire District &bull; Intake Form</div>
+    <h1>Coburg Fire District - Personnel Information</h1>
+    <p class="subtitle">
+      This info will be used to get you established at Coburg Fire. If you're not comfortable filling out this form, a physical one can be filled out at the station.
+    </p>
+    <div class="notice-banner">
+      <strong>IF NOT APPLICABLE, LEAVE BLANK.</strong> Fields marked with <span class="req">*</span> are required.
+    </div>
+
+    <form id="personnelForm" novalidate>
+
+      <!-- Section 1: Identity & Contact -->
+      <div class="section-card">
+        <h2 class="section-title">Identity &amp; Contact</h2>
+
+        <div class="field-group">
+          <label for="f_email">1. Email <span class="req">*</span></label>
+          <input type="email" id="f_email" name="Email Address" required placeholder="name@example.com">
+        </div>
+
+        <div class="grid-3 field-group">
+          <div class="field-group">
+            <label for="f_first">2. First Name <span class="req">*</span></label>
+            <input type="text" id="f_first" name="First Name" required>
+          </div>
+          <div class="field-group">
+            <label for="f_middle">3. Middle Name <span class="req">*</span></label>
+            <input type="text" id="f_middle" name="Middle Name" required>
+          </div>
+          <div class="field-group">
+            <label for="f_last">4. Last Name <span class="req">*</span></label>
+            <input type="text" id="f_last" name="Last Name" required>
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_dob">5. Date of Birth</label>
+            <input type="text" id="f_dob" name="Date of Birth" placeholder="Example: January 7, 2019">
+          </div>
+          <div class="field-group">
+            <label for="f_dl">6. Driver's License Number and State</label>
+            <input type="text" id="f_dl" name="Driver's License Number and State" placeholder="e.g., 1234567 OR">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_ssn">7. Social Security Number</label>
+            <input type="text" id="f_ssn" name="Social Security Number" placeholder="XXX-XX-XXXX">
+          </div>
+          <div class="field-group">
+            <label for="f_dpsst">8. DPSST Number</label>
+            <input type="text" id="f_dpsst" name="DPSST Number">
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top: 14px;">
+          <label for="f_fema">9. FEMA Student ID#</label>
+          <input type="text" id="f_fema" name="FEMA Student ID#">
+        </div>
+      </div>
+
+      <!-- Section 2: EMS & Certifications -->
+      <div class="section-card">
+        <h2 class="section-title">EMS &amp; Certifications</h2>
+
+        <div class="grid-2 field-group">
+          <div class="field-group">
+            <label for="f_nremt_num">10. NREMT Number</label>
+            <input type="text" id="f_nremt_num" name="NREMT Number">
+          </div>
+          <div class="field-group">
+            <label>11. NREMT Level</label>
+            <div class="radio-group" data-radio-group="NREMT Level">
+              <label class="radio-option"><input type="radio" name="NREMT Level" value="EMR"> EMR</label>
+              <label class="radio-option"><input type="radio" name="NREMT Level" value="EMT"> EMT</label>
+              <label class="radio-option"><input type="radio" name="NREMT Level" value="AEMT"> AEMT</label>
+              <label class="radio-option"><input type="radio" name="NREMT Level" value="Paramedic"> Paramedic</label>
+            </div>
+            <button type="button" class="btn-clear-radio" data-clear-radio="NREMT Level">Clear selection</button>
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_or_emt_num">12. Oregon EMT License Number</label>
+            <input type="text" id="f_or_emt_num" name="Oregon EMT License Number">
+          </div>
+          <div class="field-group">
+            <label>13. Oregon EMT Level</label>
+            <div class="radio-group" data-radio-group="Oregon EMT Level">
+              <label class="radio-option"><input type="radio" name="Oregon EMT Level" value="EMR"> EMR</label>
+              <label class="radio-option"><input type="radio" name="Oregon EMT Level" value="EMT"> EMT</label>
+              <label class="radio-option"><input type="radio" name="Oregon EMT Level" value="EMT-Advanced"> EMT-Advanced</label>
+              <label class="radio-option"><input type="radio" name="Oregon EMT Level" value="EMT-Intermediate"> EMT-Intermediate</label>
+              <label class="radio-option"><input type="radio" name="Oregon EMT Level" value="EMT-Paramedic"> EMT-Paramedic</label>
+            </div>
+            <button type="button" class="btn-clear-radio" data-clear-radio="Oregon EMT Level">Clear selection</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Address & Phone Numbers -->
+      <div class="section-card">
+        <h2 class="section-title">Address &amp; Phone Numbers</h2>
+
+        <div class="grid-2 field-group">
+          <div class="field-group">
+            <label for="f_street">14. Street Address <span class="req">*</span></label>
+            <input type="text" id="f_street" name="Street Address" required>
+          </div>
+          <div class="field-group">
+            <label for="f_csz">15. City, State Zip Code <span class="req">*</span></label>
+            <input type="text" id="f_csz" name="City, State Zip Code" required placeholder="Coburg, OR 97408">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_mail_street">16. Mailing Street Address</label>
+            <input type="text" id="f_mail_street" name="Mailing Street Address">
+          </div>
+          <div class="field-group">
+            <label for="f_mail_csz">17. Mailing City, State Zip Code</label>
+            <input type="text" id="f_mail_csz" name="Mailing City, State Zip Code">
+          </div>
+        </div>
+
+        <div class="grid-3 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_home_phone">18. Home Phone</label>
+            <input type="tel" id="f_home_phone" name="Home Phone">
+          </div>
+          <div class="field-group">
+            <label for="f_cell_phone">19. Cell Phone <span class="req">*</span></label>
+            <input type="tel" id="f_cell_phone" name="Cell Phone" required>
+          </div>
+          <div class="field-group">
+            <label for="f_work_phone">20. Work Phone</label>
+            <input type="tel" id="f_work_phone" name="Work Phone">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Spouse & Emergency Contacts -->
+      <div class="section-card">
+        <h2 class="section-title">Spouse &amp; Emergency Contacts</h2>
+
+        <div class="grid-2 field-group">
+          <div class="field-group">
+            <label for="f_spouse_name">21. Spouse Name</label>
+            <input type="text" id="f_spouse_name" name="Spouse Name">
+          </div>
+          <div class="field-group">
+            <label for="f_spouse_phone">22. Spouse Phone Number</label>
+            <input type="tel" id="f_spouse_phone" name="Spouse Phone Number">
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top: 14px;">
+          <label for="f_spouse_addr">23. Spouse's Address</label>
+          <input type="text" id="f_spouse_addr" name="Spouse's Address">
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_spouse_emp">24. Spouse Employer</label>
+            <input type="text" id="f_spouse_emp" name="Spouse Employer">
+          </div>
+          <div class="field-group">
+            <label for="f_spouse_emp_phone">25. Spouse Employer Phone</label>
+            <input type="tel" id="f_spouse_emp_phone" name="Spouse Employer Phone">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_alt1_name">26. Alternate Contact to be notified (Name)</label>
+            <input type="text" id="f_alt1_name" name="Alternate Contact to be notified (Name)">
+          </div>
+          <div class="field-group">
+            <label for="f_alt1_phone">27. Alternate Contact Phone Number</label>
+            <input type="tel" id="f_alt1_phone" name="Alternate Contact Phone Number">
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top: 14px;">
+          <label for="f_alt1_addr">28. Alternate Contact Address</label>
+          <input type="text" id="f_alt1_addr" name="Alternate Contact Address">
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_alt2_name">29. 2nd Alternate Contact to be notified (Name)</label>
+            <input type="text" id="f_alt2_name" name="2nd Alternate Contact to be notified (Name)">
+          </div>
+          <div class="field-group">
+            <label for="f_alt2_phone">30. 2nd Alternate Contact Phone Number</label>
+            <input type="tel" id="f_alt2_phone" name="2nd Alternate Contact Phone Number">
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top: 14px;">
+          <label for="f_alt2_addr">31. 2nd Alternate Contact Address</label>
+          <input type="text" id="f_alt2_addr" name="2nd Alternate Contact Address">
+        </div>
+      </div>
+
+      <!-- Section 5: Medical & Preferences -->
+      <div class="section-card">
+        <h2 class="section-title">Medical &amp; Preferences</h2>
+
+        <div class="grid-2 field-group">
+          <div class="field-group">
+            <label for="f_doctor">32. Doctor to be Called</label>
+            <input type="text" id="f_doctor" name="Doctor to be Called">
+          </div>
+          <div class="field-group">
+            <label for="f_doc_phone">33. Phone Number of Doctor to be Called</label>
+            <input type="tel" id="f_doc_phone" name="Phone Number of Doctor to be Called">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_hospital">34. Hospital to be moved to</label>
+            <input type="text" id="f_hospital" name="Hospital to be moved to">
+          </div>
+          <div class="field-group">
+            <label for="f_blood">35. Blood Type</label>
+            <input type="text" id="f_blood" name="Blood Type">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_allergies">36. Allergies</label>
+            <input type="text" id="f_allergies" name="Allergies">
+          </div>
+          <div class="field-group">
+            <label for="f_meds">37. Medications being used (separate by commas)</label>
+            <input type="text" id="f_meds" name="Medications being used (separate by commas)">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_presc_doc">38. Prescribing Doctor</label>
+            <input type="text" id="f_presc_doc" name="Prescribing Doctor">
+          </div>
+          <div class="field-group">
+            <label for="f_religion">39. Religious Preference:</label>
+            <input type="text" id="f_religion" name="Religious Preference:">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_minister">40. Minister Name and Phone Number</label>
+            <input type="text" id="f_minister" name="Minister Name and Phone Number">
+          </div>
+          <div class="field-group">
+            <label for="f_funeral">41. Funeral Home Preference</label>
+            <input type="text" id="f_funeral" name="Funeral Home Preference">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Uniform/PPE Information -->
+      <div class="section-card">
+        <h2 class="section-title">Uniform/PPE Information</h2>
+
+        <div class="grid-2 field-group">
+          <div class="field-group">
+            <label for="f_phone_os">42. Phone Operating System</label>
+            <input type="text" id="f_phone_os" name="Phone Operating System" placeholder="e.g., iOS, Android">
+          </div>
+          <div class="field-group">
+            <label for="f_shirt">43. Shirt Size</label>
+            <input type="text" id="f_shirt" name="Shirt Size">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_pant">44. Pant Size (Men's sizing)</label>
+            <input type="text" id="f_pant" name="Pant Size (Men's sizing)">
+          </div>
+          <div class="field-group">
+            <label for="f_hat">45. Hat Size</label>
+            <input type="text" id="f_hat" name="Hat Size">
+          </div>
+        </div>
+
+        <div class="grid-2 field-group" style="margin-top: 14px;">
+          <div class="field-group">
+            <label for="f_glove">46. Glove Size</label>
+            <input type="text" id="f_glove" name="Glove Size">
+          </div>
+          <div class="field-group">
+            <label for="f_shoe">47. Shoe Size</label>
+            <input type="text" id="f_shoe" name="Shoe Size">
+          </div>
+        </div>
+      </div>
+
+      <div class="submit-bar">
+        <button type="button" id="resetFormBtn" class="secondary-btn">Clear Form</button>
+        <button type="submit" id="submitBtn" class="primary-btn">Submit Personnel Information</button>
+      </div>
+
+      <div id="formStatus" class="status-box"></div>
+    </form>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbw9Ipdpy1g2UJOhDffbjn2nqbdKnyiyJxvWTsi8k8MDPSbgtyJYTQqE4aCJfZt-qSAK/exec';
+
+    const formContainer = document.getElementById('formContainer');
+    const personnelForm = document.getElementById('personnelForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetFormBtn = document.getElementById('resetFormBtn');
+    const formStatus = document.getElementById('formStatus');
+
+    function showBox(el, type, msg) {
+      el.className = 'status-box ' + type;
+      el.textContent = msg;
+    }
+
+    function hideBox(el) {
+      el.className = 'status-box';
+      el.textContent = '';
+    }
+
+    document.querySelectorAll('[data-clear-radio]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const groupName = btn.getAttribute('data-clear-radio');
+        personnelForm.querySelectorAll('input[type="radio"][name="' + groupName + '"]').forEach(function(r) {
+          r.checked = false;
+        });
+      });
+    });
+
+    resetFormBtn.addEventListener('click', function() {
+      personnelForm.reset();
+      hideBox(formStatus);
+    });
+
+    personnelForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      hideBox(formStatus);
+
+      if (!personnelForm.checkValidity()) {
+        personnelForm.reportValidity();
+        showBox(formStatus, 'error', 'Please complete all required (*) fields before submitting.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const payload = new FormData();
+      payload.append('sheetName', 'Form Responses 1');
+
+      const textOrTelInputs = personnelForm.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+      textOrTelInputs.forEach(function(inp) {
+        if (inp.name) {
+          payload.append(inp.name, inp.value.trim());
+        }
+      });
+
+      const radioGroups = new Set();
+      personnelForm.querySelectorAll('input[type="radio"]').forEach(function(r) {
+        if (r.name) radioGroups.add(r.name);
+      });
+      radioGroups.forEach(function(groupName) {
+        const checked = personnelForm.querySelector('input[type="radio"][name="' + groupName + '"]:checked');
+        payload.append(groupName, checked ? checked.value : '');
+      });
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: payload
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.result === 'success') {
+          showBox(formStatus, 'success', 'Submitted successfully! Row ' + (data.row || '') + ' added to Form Responses 1.');
+          personnelForm.reset();
+        } else {
+          showBox(formStatus, 'error', data.error || 'Submission failed. Please try again.');
+        }
+      })
+      .catch(function(err) {
+        console.error('Submit error:', err);
+        showBox(formStatus, 'error', 'Network error submitting form. Please try again.');
+      })
+      .finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Personnel Information';
+      });
+    });
+  </script>
+</body>
+</html>
